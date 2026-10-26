@@ -1,0 +1,3143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171923">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kite Beach">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Kite Beach · Lake Erie</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+  #hud { position: fixed; left: 12px; top: 10px; font: 12px/1.45 ui-monospace, Consolas, monospace; color: #e8e2d6;
+         text-shadow: 0 1px 2px #000a; pointer-events: none; user-select: none; }
+  #hud .help { opacity: .7; }
+  #panel { position: fixed; right: 12px; top: 10px; width: 300px; padding: 10px 12px; border-radius: 8px;
+           background: #0b0f14c8; backdrop-filter: blur(6px); color: #e5e1d8; font: 12px/1.3 system-ui, sans-serif; }
+  #panel.hidden { display: none; }
+  #panel label { display: grid; grid-template-columns: 1fr 110px 40px; gap: 6px; align-items: center; margin: 3px 0; }
+  #panel input { width: 110px; accent-color: #e2a04e; }
+  #panel output { text-align: right; font-variant-numeric: tabular-nums; opacity: .8; }
+  #err { position: fixed; inset: 0; display: none; padding: 40px; color: #f88; font: 16px system-ui; white-space: pre-wrap; background: #000; }
+  #c { touch-action:none; filter: saturate(1.45) contrast(1.28); }
+  #coast { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  #identity {position:fixed;left:16px;bottom:20px;color:#fff0d9;font: 12px/1.6 system-ui;letter-spacing:.15em;text-shadow:0 2px 9px #000;pointer-events:none}
+  #identity b {display:block;font-size:16px;letter-spacing:.23em}
+  #hud {top:12px;left:12px;opacity:.48;font-size:10px}
+  @media(max-width:650px){#hud .help{display:none}#panel{max-width:calc(100vw - 45px)}}
+#controls{position:fixed;right:14px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:7px}
+  button{min-height:44px;padding:8px 12px;border:1px solid #ffdda744;border-radius:22px;background:#171c24b8;color:#fff0d9;cursor:pointer}
+  #panel{max-height:70vh;overflow:auto;box-sizing:border-box;width:min(340px,calc(100vw - 24px))}
+  #identity{bottom:76px} #err{z-index:10}
+
+#hud,#controls,#panel{display:none!important} #c{cursor:default!important}
+#identity{bottom:20px;left:17px;opacity:.85}
+#cloud-controls{position:fixed;right:12px;bottom:18px;z-index:4;color:#ffead0;font:11px system-ui;background:rgba(19,24,34,.16);border:1px solid rgba(219,169,125,.14);border-radius:999px;padding:4px 8px;backdrop-filter:blur(8px);width:auto;opacity:.6;transition:opacity .2s ease,background .2s ease,border-color .2s ease,box-shadow .2s ease}
+#cloud-controls[open]{background:#131822c9;border:1px solid #dba97d44;border-radius:14px;padding:10px 12px;width:min(226px,calc(100vw - 36px));opacity:1;box-shadow:0 8px 28px #0007}
+#cloud-controls summary{cursor:pointer;font-weight:500;list-style:none;letter-spacing:.05em}#cloud-controls summary::-webkit-details-marker{display:none}
+#cloud-controls label{display:block;margin-top:8px}#cloud-controls input{width:100%;accent-color:#efaa6d}
+#cloud-controls small{opacity:.68}#identity b{font-size:16px}
+#new-clouds{min-height:32px;width:100%;margin-top:11px;padding:6px 10px;font:500 12px system-ui;background:rgba(241,178,119,.10);border:1px solid rgba(240,195,146,.27);border-radius:10px;color:#ffe8cb}
+#controls button#reset-sun{opacity:.78}
+#sunset-replay{position:fixed;top:16px;right:16px;z-index:6;min-height:44px;padding:10px 16px;font:600 13px/1.3 system-ui;letter-spacing:.01em;color:#fff2dc;background:rgba(84,49,31,.93);border:1px solid rgba(255,205,139,.82);border-radius:999px;box-shadow:0 5px 25px rgba(0,0,0,.45),0 0 20px rgba(237,157,74,.25);backdrop-filter:blur(9px);opacity:1;animation:sunsetReplayAppear .7s ease-out both}
+#sunset-replay:active{transform:scale(.98)}
+#sunset-replay[hidden]{display:none!important}
+@keyframes sunsetReplayAppear{from{opacity:0;translate:0 -9px}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){#sunset-replay{animation:none}}
+
+
+#audio-controls{position:fixed;left:16px;top:16px;z-index:5;color:#ffead0;font:11px system-ui;background:rgba(19,24,34,.14);border:1px solid rgba(219,169,125,.12);border-radius:999px;padding:4px 8px;backdrop-filter:blur(8px);width:auto;opacity:.58;transition:opacity .2s ease,background .2s ease,border-color .2s ease,box-shadow .2s ease}
+#audio-controls[open]{background:#131822d4;border:1px solid #dba97d44;border-radius:14px;padding:10px 12px;width:min(240px,calc(100vw - 36px));opacity:1;box-shadow:0 8px 28px #0007}
+#audio-controls summary{cursor:pointer;font-weight:500;list-style:none;letter-spacing:.05em}
+#audio-controls summary::-webkit-details-marker{display:none}
+#audio-controls .audio-grid{display:grid;grid-template-columns:1fr auto;gap:4px;margin:7px 0 12px;align-items:center}
+#audio-controls .audio-grid input{grid-column:1 / span 2;width:100%;accent-color:#efaa6d}
+#audio-controls button{min-height:36px;padding:7px 11px;font:12px system-ui;background:#171c24c9}
+#audio-controls .audio-status{margin-top:7px;opacity:.72;line-height:1.35}
+#audio-controls .meter{height:24px;display:flex;gap:2px;align-items:end;justify-content:center;margin:7px 0 10px;opacity:.72}
+#audio-controls .meter i{display:block;width:3px;min-height:3px;border-radius:6px;background:#e4ad88;transform-origin:center;transition:height .1s linear}
+#audio-controls #error{display:none;margin:10px 0 0;padding:9px 10px;background:#472b31;color:#ffccbd;border-radius:10px;white-space:pre-wrap;font:11px/1.45 system-ui}
+#audio-controls small{display:block;opacity:.62;line-height:1.35}
+@media(max-width:650px){#audio-controls{top:12px;left:12px}}
+
+
+/* Both scene controls share a subtle bottom-right dock; neither overlays the sky. */
+#scene-controls{position:fixed;right:12px;bottom:max(14px, env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:flex-end;gap:7px;z-index:7;max-width:calc(100vw - 24px)}
+#scene-controls #audio-controls,#scene-controls #cloud-controls{position:relative;top:auto;bottom:auto;left:auto;right:auto;margin:0;z-index:auto;flex:0 0 auto}
+#scene-controls #audio-controls[open],#scene-controls #cloud-controls[open]{width:min(226px,calc(100vw - 120px));max-height:65dvh;overflow:auto}
+@media(max-width:430px){#scene-controls #audio-controls[open],#scene-controls #cloud-controls[open]{width:min(226px,calc(100vw - 116px))}}
+
+
+/* Words are opt-in and do not intercept the WebGPU view. */
+#quote-stage{
+  position:fixed;left:50%;top:32%;transform:translate(-50%,8px);
+  width:min(84vw,730px);max-width:calc(100vw - 42px);
+  z-index:5;pointer-events:none;text-align:center;
+  opacity:0;transition:opacity 4.3s ease-in-out,transform 4.3s ease-in-out;
+  color:rgba(255,244,222,.94);
+  text-shadow:0 2px 15px rgba(11,10,18,.8),0 1px 3px rgba(0,0,0,.7);
+  font:400 clamp(19px,2.45vw,31px)/1.48 Georgia,'Times New Roman',serif;
+  letter-spacing:.008em;text-wrap:balance;
+}
+#quote-stage.visible{opacity:1;transform:translate(-50%,0)}
+#quote-stage #quote-text{display:block}
+#quote-controls{color:#ffead0;font:11px system-ui;background:rgba(19,24,34,.16);border:1px solid rgba(219,169,125,.14);border-radius:999px;padding:4px 8px;backdrop-filter:blur(8px);opacity:.62;transition:opacity .2s ease,background .2s ease}
+#quote-controls[open]{background:#131822d4;border:1px solid #dba97d44;border-radius:14px;padding:10px 12px;width:min(235px,calc(100vw - 125px));opacity:1;box-shadow:0 8px 28px #0007}
+#quote-controls summary{cursor:pointer;font-weight:500;list-style:none;letter-spacing:.05em}
+#quote-controls summary::-webkit-details-marker{display:none}
+#quote-controls label{display:block;margin:11px 0 6px;font:12px system-ui;opacity:.95}
+#quote-controls select{color:#fce8d0;background:#1a212b;border:1px solid rgba(234,189,146,.3);border-radius:8px;font:12px system-ui;padding:7px;width:100%;max-width:100%}
+#quote-controls small{display:block;opacity:.68;line-height:1.5;margin-top:8px}
+#scene-controls #quote-controls{position:relative;z-index:auto;flex:0 0 auto;align-self:flex-end}
+@media(orientation:portrait){#quote-stage{top:31%;width:84vw;font-size:clamp(20px,4.65vw,29px);line-height:1.5}}
+@media(orientation:landscape){#quote-stage{top:35%;width:min(63vw,750px);font-size:clamp(18px,2.4vw,30px)}}
+@media(max-height:430px) and (orientation:landscape){#quote-stage{top:32%;font-size:clamp(17px,2.0vw,23px)}}
+@media(prefers-reduced-motion:reduce){#quote-stage{transition-duration:.35s}}
+
+/* Authenticated quotation typography uses the same warm foreground as the Kite Beach wordmark. */
+#quote-stage{color:#fff0d9;font-family:Georgia,'Palatino Linotype','Book Antiqua',serif;
+  font-weight:400;font-style:italic;font-size:clamp(16px,2.0vw,23px);
+  line-height:1.5;letter-spacing:.015em;text-shadow:0 2px 10px rgba(7,6,12,.85),0 1px 3px #000a}
+#quote-stage #quote-text{display:block}
+#quote-source{font:400 10px/1.5 system-ui,-apple-system,sans-serif;letter-spacing:.095em;
+  color:#fff0d9;opacity:.78;margin-top:14px;text-transform:none;font-style:normal}
+@media(orientation:portrait){#quote-stage{top:29%;width:83vw;font-size:clamp(16px,3.65vw,21px);line-height:1.48}
+  #quote-source{font-size:10px;margin-top:12px}}
+@media(orientation:landscape){#quote-stage{top:30%;width:min(57vw,650px);font-size:clamp(15px,1.9vw,22px)}
+  #quote-source{font-size:10px;margin-top:9px}}
+@media(max-height:430px) and (orientation:landscape){#quote-stage{top:27%;font-size:clamp(14px,1.55vw,19px)}
+  #quote-source{font-size:9px;margin-top:7px}}
+/* Align collapsed Sound / Clouds / Words buttons to one common height. */
+#scene-controls{align-items:flex-end;gap:7px}
+#scene-controls>details:not([open]){height:31px;min-height:31px;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;padding:0 11px!important;border-radius:999px}
+#scene-controls>details:not([open])>summary{box-sizing:border-box;display:flex;align-items:center;
+  justify-content:center;min-height:29px;height:29px;line-height:1;padding:0;margin:0;white-space:nowrap}
+#scene-controls>details[open]{align-self:flex-end;box-sizing:border-box}
+#scene-controls>details[open]>summary{min-height:21px}
+#audio-controls .audio-status{font-size:11px}
+#quote-controls a{color:#fff0d9;opacity:.82;text-decoration:underline;text-underline-offset:3px}
+#quote-controls .sources{font:10px/1.5 system-ui;color:#fff0d9;opacity:.68;margin-top:10px}
+
+
+/* Simple visitor controls: retain hidden backing inputs for audio/cloud state bindings. */
+#audio-controls .audio-grid, #audio-controls .meter {display:none!important}
+#audio-controls[open], #cloud-controls[open] {min-width:185px}
+#cloud-controls label:has(input[type="range"]) {display:none!important}
+#cloud-controls label:has(#c-enabled) {display:flex;align-items:center;gap:8px;margin:12px 0 3px;font:12px system-ui}
+#cloud-controls #c-enabled {accent-color:#efaa6d}
+#audio-controls #toggle {width:100%;margin:10px 0 3px}
+#audio-controls .audio-status {font-size:10px;max-width:220px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<pre id="gpu-diag" style="display:none;position:fixed;inset:auto 12px 86px 12px;max-height:45vh;overflow:auto;z-index:100;color:#fff4ec;background:#5d172ae8;border:1px solid #ffbca0;border-radius:10px;padding:14px;font:12px/1.4 ui-monospace,monospace;white-space:pre-wrap"></pre>
+
+<div id="identity"><b>KITE BEACH</b>LAKE ERIE</div>
+<div id="hud">
+  <div id="fps">starting…</div>
+  <div class="help">drag to look · water-facing view · H settings</div>
+</div>
+<div id="panel" class="hidden"></div>
+<nav id="controls"><button id="settings">Settings</button><button id="pause">Pause</button><button id="reset">Reset view</button><button id="reset-sun">Reset sunset</button></nav>
+<div id="err" role="alert"></div>
+<button id="sunset-replay" type="button" hidden>↻ Watch sunset again</button>
+<div id="quote-stage" aria-live="off"><div id="quote-text"></div><div id="quote-source"></div></div>
+
+<script type="module">
+// ---- js/wgsl/common.js ----
+// Shared constants and WGSL snippets.
+const N = 256;          // FFT resolution per cascade
+const LOGN = 8;
+const CASCADES = 6;
+const SKY_W = 256;      // sky-view LUT size
+const SKY_H = 144;
+const ENV_SIZE = 256;   // environment cube face size
+const ENV_MIPS = 9;
+
+// Per-frame uniform block shared by every render / sky shader.
+// Layout must match the Float32Array offsets in main.js (FR_* constants).
+const FRAME_WGSL = /* wgsl */ `
+struct Frame {
+  viewProj: mat4x4f,   // camera-relative view-projection (reverse-Z, infinite)
+  camPos:   vec4f,     // xyz metres, w = time (s)
+  camRight: vec4f,     // xyz * tan(fovX/2)
+  camUp:    vec4f,     // xyz * tan(fovY/2)
+  camFwd:   vec4f,     // xyz
+  sunDir:   vec4f,     // xyz towards sun, w = solar illuminance scale
+  screen:   vec4f,     // w, h, 1/w, 1/h
+  cascL:    array<vec4f, 2>,  // cascade patch sizes (m), index [c>>2][c&3]
+  cascInvL: array<vec4f, 2>,
+  windP:    array<vec4f, 2>,  // [0].xy = wind direction (unit), [0].z = wind speed
+  lodP:     vec4f,     // CDLOD base range, grid quads per node, -, -
+  post:     vec4f,     // exposure, bloom strength, frame index, -
+  atmo:     vec4f,     // haze (mie multiplier), camera altitude km, -, -
+  waterCol: vec4f,     // body scatter colour rgb, unresolved slope variance
+  sssCol:   vec4f,     // sss colour rgb, sss strength
+  foamP:    vec4f,     // J threshold, J gain, foam intensity, lace sharpness
+  fogExt:   vec4f,     // rgb extinction per metre near sea level
+  cloudP:   vec4f,     // altitude km, coverage, optical density, wind time
+};
+`;
+
+const ATMO_CORE_WGSL = /* wgsl */ `
+const PI: f32 = 3.14159265358979;
+const RG: f32 = 6360.0;
+const RT: f32 = 6460.0;
+const RAY_S: vec3f = vec3f(5.802e-3, 13.558e-3, 33.1e-3);
+const MIE_S: f32 = 3.996e-3;
+const MIE_E: f32 = 4.40e-3;
+const OZO_A: vec3f = vec3f(0.650e-3, 1.881e-3, 0.085e-3);
+const SUN_ANG_R: f32 = 0.004675;
+const TRANS_W: f32 = 256.0;
+const TRANS_H: f32 = 64.0;
+const MS_SIZE: f32 = 32.0;
+
+struct Medium { ext: vec3f, rayS: vec3f, mieS: f32 };
+
+fn medium(h: f32, haze: f32) -> Medium {
+  let hh = max(h, 0.0);
+  let dR = exp(-hh / 8.0);
+  // aerosols: regular 1.2 km layer plus a dense marine boundary layer
+  let dM = exp(-hh / 1.2);
+  let dO = max(0.0, 1.0 - abs(hh - 25.0) / 15.0);
+  var m: Medium;
+  m.rayS = RAY_S * dR;
+  m.mieS = MIE_S * dM * haze;
+  m.ext = m.rayS + vec3f(MIE_E * dM * haze) + OZO_A * dO;
+  return m;
+}
+
+fn raySphere(ro: vec3f, rd: vec3f, R: f32) -> vec2f {
+  let l = length(ro);
+  let b = dot(ro, rd);
+  let c = (l - R) * (l + R);
+  let d = b * b - c;
+  if (d < 0.0) { return vec2f(-1.0, -1.0); }
+  let s = sqrt(d);
+  return vec2f(-b - s, -b + s);
+}
+
+fn rhoOf(r: f32) -> f32 { return sqrt(max(0.0, (r - RG) * (r + RG))); }
+
+fn transRMuToUV(r: f32, mu: f32) -> vec2f {
+  let H = sqrt(RT * RT - RG * RG);
+  let rho = rhoOf(r);
+  let disc = r * r * (mu * mu - 1.0) + RT * RT;
+  let d = max(0.0, -r * mu + sqrt(max(disc, 0.0)));
+  let dMin = RT - r;
+  let dMax = rho + H;
+  let x = (d - dMin) / (dMax - dMin);
+  let y = rho / H;
+  return vec2f(x, y);
+}
+
+fn transUVToRMu(uv: vec2f) -> vec2f {
+  let H = sqrt(RT * RT - RG * RG);
+  let rho = H * uv.y;
+  let r = sqrt(rho * rho + RG * RG);
+  let dMin = RT - r;
+  let dMax = rho + H;
+  let d = dMin + uv.x * (dMax - dMin);
+  var mu = 1.0;
+  if (d > 0.0) { mu = (H * H - rho * rho - d * d) / (2.0 * r * d); }
+  return vec2f(r, clamp(mu, -1.0, 1.0));
+}
+
+fn fromUnitToSubUvs(u: f32, res: f32) -> f32 { return (u + 0.5 / res) * (res / (res + 1.0)); }
+fn fromSubUvsToUnit(u: f32, res: f32) -> f32 { return (u - 0.5 / res) * (res / (res - 1.0)); }
+
+fn phaseRayleigh(c: f32) -> f32 { return 3.0 / (16.0 * PI) * (1.0 + c * c); }
+fn phaseMie(c: f32, g: f32) -> f32 {
+  let g2 = g * g;
+  return 3.0 / (8.0 * PI) * ((1.0 - g2) * (1.0 + c * c)) / ((2.0 + g2) * pow(max(1.0 + g2 - 2.0 * g * c, 1e-4), 1.5));
+}
+fn phaseHG(c: f32, g: f32) -> f32 {
+  let g2 = g * g;
+  return (1.0 - g2) / (4.0 * PI * pow(max(1.0 + g2 - 2.0 * g * c, 1e-4), 1.5));
+}
+
+// true when the sun is below the geometric horizon of a point at radius r
+fn sunBelowHorizon(r: f32, mu: f32) -> bool {
+  return mu < -rhoOf(r) / r;
+}
+`;
+
+// Hashing helpers used by the procedural texture generators.
+const NOISE_WGSL = /* wgsl */ `
+fn pcgHash(v: u32) -> u32 {
+  let s = v * 747796405u + 2891336453u;
+  let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
+  return (w >> 22u) ^ w;
+}
+fn hashGrad(i: vec2i) -> vec2f {
+  let h = pcgHash(u32(i.x) * 1664525u + pcgHash(u32(i.y) + 1013904223u));
+  let a = f32(h) * (6.28318530718 / 4294967296.0);
+  return vec2f(cos(a), sin(a));
+}
+fn gnoise(p: vec2f) -> f32 {
+  let i = vec2i(floor(p));
+  let f = p - floor(p);
+  let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  let a = dot(hashGrad(i), f);
+  let b = dot(hashGrad(i + vec2i(1, 0)), f - vec2f(1.0, 0.0));
+  let c = dot(hashGrad(i + vec2i(0, 1)), f - vec2f(0.0, 1.0));
+  let d = dot(hashGrad(i + vec2i(1, 1)), f - vec2f(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+`;
+
+// Periodic (tileable) noise for procedural textures. Requires NOISE_WGSL.
+const PERIODIC_WGSL = /* wgsl */ `
+fn pnoise(p: vec2f, period: i32) -> f32 {
+  let i = vec2i(floor(p));
+  let f = p - floor(p);
+  let u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  let i00 = (i % period + period) % period;
+  let i10 = ((i + vec2i(1, 0)) % period + period) % period;
+  let i01 = ((i + vec2i(0, 1)) % period + period) % period;
+  let i11 = ((i + vec2i(1, 1)) % period + period) % period;
+  let a = dot(hashGrad(i00), f);
+  let b = dot(hashGrad(i10), f - vec2f(1.0, 0.0));
+  let c = dot(hashGrad(i01), f - vec2f(0.0, 1.0));
+  let d = dot(hashGrad(i11), f - vec2f(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+fn pfbm(p: vec2f, period: i32, oct: i32) -> f32 {
+  var s = 0.0; var a = 0.5; var q = p; var per = period;
+  for (var o = 0; o < oct; o++) {
+    s += a * pnoise(q, per);
+    q *= 2.0; per *= 2; a *= 0.5;
+  }
+  return s;
+}
+`;
+
+// ---- js/wgsl/sim.js ----
+// FFT ocean simulation (Tessendorf) — 4 cascades of 256^2.
+
+const SIM_STRUCT = /* wgsl */ `
+const N: u32 = ${N}u;
+const LOGN: u32 = ${LOGN}u;
+const PI: f32 = 3.14159265358979;
+const GRAV: f32 = 9.81;
+const SURF: f32 = 7.4e-5;   // surface tension / density
+
+struct Sim {
+  L:          array<vec4f, 2>,  // patch size per cascade ([c>>2][c&3])
+  kMin:       array<vec4f, 2>,
+  kMax:       array<vec4f, 2>,
+  foamDecay:  array<vec4f, 2>,  // 1/s per cascade
+  foamThresh: array<vec4f, 2>,  // Jacobian threshold per cascade
+  wind:       vec4f,  // U10 m/s, direction rad, fetch m, gamma
+  swell:      vec4f,  // Hs m, direction rad, peak omega, spreading exponent
+  misc:       vec4f,  // choppiness, short wave cut (m), loop period s, seed
+  timeP:      vec4f,  // time (looped), dt, foam gain, spectrum gain
+};
+@group(0) @binding(0) var<uniform> S: Sim;
+
+fn waveVec(x: u32, y: u32, L: f32) -> vec2f {
+  let nx = select(i32(x), i32(x) - i32(N), x >= N / 2u);
+  let ny = select(i32(y), i32(y) - i32(N), y >= N / 2u);
+  return vec2f(f32(nx), f32(ny)) * (2.0 * PI / L);
+}
+// Uniform 3 m effective depth for this nearshore study, not a bathymetry solver.
+fn omegaOf(k: f32) -> f32 {
+  return sqrt((GRAV * k + SURF * k * k * k) * tanh(k * 3.0));
+}
+fn cmul(a: vec2f, b: vec2f) -> vec2f { return vec2f(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+fn mulI(a: vec2f) -> vec2f { return vec2f(-a.y, a.x); }
+`;
+
+const SIM_INIT = SIM_STRUCT + NOISE_WGSL + /* wgsl */ `
+@group(0) @binding(1) var<storage, read_write> h0: array<vec4f>;
+
+fn rand01(s: u32) -> f32 { return (f32(pcgHash(s) >> 8u) + 0.5) / 16777216.0; }
+fn gauss2(seed: u32) -> vec2f {
+  let u1 = rand01(seed * 2u + 17u);
+  let u2 = rand01(seed * 2u + 18u + pcgHash(seed));
+  let r = sqrt(-2.0 * log(u1));
+  let a = 2.0 * PI * u2;
+  return r * vec2f(cos(a), sin(a));
+}
+fn wrapAngle(a: f32) -> f32 {
+  var x = a;
+  x = x - 2.0 * PI * floor((x + PI) / (2.0 * PI));
+  return x;
+}
+fn jonswap(w: f32, wp: f32, alpha: f32, gamma: f32) -> f32 {
+  let sigma = select(0.09, 0.07, w <= wp);
+  let d = (w - wp) / (sigma * wp);
+  let r = exp(-0.5 * d * d);
+  let q = wp / w;
+  let q2 = q * q;
+  return alpha * GRAV * GRAV / (w * w * w * w * w) * exp(-1.25 * q2 * q2) * pow(gamma, r);
+}
+// Donelan-Banner directional spreading (normalised over [-pi, pi])
+fn donelanBanner(theta: f32, w: f32, wp: f32) -> f32 {
+  let ratio = w / wp;
+  var beta: f32;
+  if (ratio < 0.95) {
+    beta = 2.61 * pow(ratio, 1.3);
+  } else if (ratio < 1.6) {
+    beta = 2.28 * pow(ratio, -1.3);
+  } else {
+    let eps = -0.4 + 0.8393 * exp(-0.567 * log(ratio * ratio));
+    beta = pow(10.0, eps);
+  }
+  let sh = 1.0 / cosh(clamp(beta * theta, -20.0, 20.0));
+  return beta / (2.0 * tanh(beta * PI)) * sh * sh;
+}
+// cos^2s(theta/2) spreading, normalised
+fn cosSpread(theta: f32, s: f32) -> f32 {
+  let q = sqrt(s + 0.25) / (2.0 * sqrt(PI));
+  return q * pow(abs(cos(theta * 0.5)), 2.0 * s);
+}
+
+// Independent height bands: broad gentle undulation, wind waves, fine texture.
+// Log-normal density integrates in dk; division by k converts to Cartesian
+// spectral density. No high-pass gate transferring visual weight to ripples.
+fn lakeBand(k: f32, wavelength: f32, hs: f32, width: f32) -> f32 {
+  let peak = 2.0 * PI / wavelength;
+  let q = log(k / peak) / width;
+  let variance = hs * hs / 16.0;
+  return variance * exp(-0.5 * q * q) / (k * width * sqrt(2.0 * PI));
+}
+fn spectrum(k: vec2f) -> f32 {
+  let kl = length(k);
+  let theta = atan2(k.y, k.x);
+  let windAngle = wrapAngle(theta - S.wind.y);
+  let swellAngle = wrapAngle(theta - S.swell.y);
+  // S.wind.x = nominal wind-wave Hs; S.wind.z = wind wavelength.
+  let wind = lakeBand(kl, S.wind.z, S.wind.x, 0.48)
+           * cosSpread(windAngle, 16.0);
+  // S.swell.z carries peak wavelength for the lake spectrum.
+  let broad = lakeBand(kl, S.swell.z, S.swell.x, 0.34)
+            * cosSpread(swellAngle, S.swell.w);
+  let texture = lakeBand(kl, 0.24, 0.0045, 0.65)
+              * donelanBanner(windAngle, omegaOf(kl), omegaOf(26.18));
+  return (broad + wind + texture) / kl * S.timeP.w;
+}
+
+fn amplitude(k: vec2f, c: u32) -> f32 {
+  let kl = length(k);
+  if (kl < 1e-5 || kl < S.kMin[c >> 2u][c & 3u] || kl >= S.kMax[c >> 2u][c & 3u]) { return 0.0; }
+  let dk = 2.0 * PI / S.L[c >> 2u][c & 3u];
+  // the finest cascades are toned down (they otherwise read as crumpled foil)
+  let g = select(1.0, select(0.85, 0.6, c == 5u), c >= 4u);
+  return sqrt(max(spectrum(k), 0.0)) * dk * 0.5 * g;
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let c = id.z;
+  let L = S.L[c >> 2u][c & 3u];
+  let k = waveVec(id.x, id.y, L);
+  let mx = (N - id.x) % N;
+  let my = (N - id.y) % N;
+  let seed = u32(S.misc.w) * 7919u + c * 1000003u;
+  let a = gauss2(seed + (id.y * N + id.x)) * amplitude(k, c);
+  let b = gauss2(seed + (my * N + mx)) * amplitude(-k, c);
+  h0[(c * N + id.y) * N + id.x] = vec4f(a, b.x, -b.y);
+}
+`;
+
+const SIM_EVOLVE = SIM_STRUCT + /* wgsl */ `
+@group(0) @binding(1) var<storage, read> h0: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> specA: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> specB: array<vec4f>;
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let c = id.z;
+  let idx = (c * N + id.y) * N + id.x;
+  let k = waveVec(id.x, id.y, S.L[c >> 2u][c & 3u]);
+  let kl = length(k);
+  if (kl < 1e-5) {
+    specA[idx] = vec4f(0.0);
+    specB[idx] = vec4f(0.0);
+    return;
+  }
+  let w0 = 2.0 * PI / S.misc.z;
+  let w = floor(omegaOf(kl) / w0) * w0;
+  let ph = w * S.timeP.x;
+  let e = vec2f(cos(ph), sin(ph));
+  let H0 = h0[idx];
+  // h0(k) travels along +k: h(k,t) = h0(k) e^{-iwt} + conj(h0(-k)) e^{iwt}
+  let h = cmul(H0.xy, vec2f(e.x, -e.y)) + cmul(H0.zw, e);
+  let ih = mulI(h);
+  let lam = S.misc.x;
+  let ik = 1.0 / kl;
+  let Dx = ih * (lam * k.x * ik);
+  let Dz = ih * (lam * k.y * ik);
+  let jxz = h * (-lam * k.x * k.y * ik);
+  let sx = ih * k.x;
+  let sz = ih * k.y;
+  let jxx = h * (-lam * k.x * k.x * ik);
+  let jzz = h * (-lam * k.y * k.y * ik);
+  specA[idx] = vec4f(Dx + mulI(Dz), h + mulI(jxz));
+  specB[idx] = vec4f(sx + mulI(sz), jxx + mulI(jzz));
+}
+`;
+
+const FFT_CORE = /* wgsl */ `
+const N: u32 = ${N}u;
+const LOGN: u32 = ${LOGN}u;
+const PI: f32 = 3.14159265358979;
+var<workgroup> wa: array<vec4f, ${N}>;
+var<workgroup> wb: array<vec4f, ${N}>;
+fn cmul(a: vec2f, b: vec2f) -> vec2f { return vec2f(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+fn bitrev(i: u32) -> u32 { return reverseBits(i) >> (32u - LOGN); }
+// In-place radix-2 inverse FFT over shared memory (input already bit-reversed).
+fn butterflies(t: u32) {
+  for (var s = 0u; s < LOGN; s++) {
+    let half = 1u << s;
+    let pos = t & (half - 1u);
+    let i0 = ((t >> s) << (s + 1u)) + pos;
+    let i1 = i0 + half;
+    let ang = PI * f32(pos) / f32(half);
+    let w = vec2f(cos(ang), sin(ang));
+    let a0 = wa[i0]; let a1 = wa[i1];
+    let b0 = wb[i0]; let b1 = wb[i1];
+    let ta = vec4f(cmul(a1.xy, w), cmul(a1.zw, w));
+    let tb = vec4f(cmul(b1.xy, w), cmul(b1.zw, w));
+    wa[i0] = a0 + ta; wa[i1] = a0 - ta;
+    wb[i0] = b0 + tb; wb[i1] = b0 - tb;
+    workgroupBarrier();
+  }
+}
+`;
+
+const FFT_ROWS = FFT_CORE + /* wgsl */ `
+@group(0) @binding(0) var<storage, read> inA: array<vec4f>;
+@group(0) @binding(1) var<storage, read> inB: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> outA: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> outB: array<vec4f>;
+
+@compute @workgroup_size(${N / 2})
+fn main(@builtin(workgroup_id) wg: vec3u, @builtin(local_invocation_index) t: u32) {
+  let base = (wg.z * N + wg.x) * N;
+  let e0 = t;
+  let e1 = t + N / 2u;
+  wa[bitrev(e0)] = inA[base + e0];
+  wa[bitrev(e1)] = inA[base + e1];
+  wb[bitrev(e0)] = inB[base + e0];
+  wb[bitrev(e1)] = inB[base + e1];
+  workgroupBarrier();
+  butterflies(t);
+  outA[base + e0] = wa[e0];
+  outA[base + e1] = wa[e1];
+  outB[base + e0] = wb[e0];
+  outB[base + e1] = wb[e1];
+}
+`;
+
+// Column pass + final assembly (displacement / derivative / slope-moment textures).
+const FFT_COLS = FFT_CORE + /* wgsl */ `
+@group(0) @binding(0) var<storage, read> inA: array<vec4f>;
+@group(0) @binding(1) var<storage, read> inB: array<vec4f>;
+@group(0) @binding(2) var dispOut: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(3) var derivOut: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(4) var momOut: texture_storage_2d_array<rgba16float, write>;
+
+fn emit(x: u32, y: u32, c: u32, a: vec4f, b: vec4f) {
+  // a = (Dx, Dz, Dy, jxz), b = (sx, sz, jxx, jzz)
+  let p = vec2u(x, y);
+  textureStore(dispOut, p, c, vec4f(a.x, a.z, a.y, a.w));
+  textureStore(derivOut, p, c, b);
+  textureStore(momOut, p, c, vec4f(b.x * b.x, b.y * b.y, b.x * b.y, 0.0));
+}
+
+@compute @workgroup_size(${N / 2})
+fn main(@builtin(workgroup_id) wg: vec3u, @builtin(local_invocation_index) t: u32) {
+  let x = wg.x;
+  let c = wg.z;
+  let e0 = t;
+  let e1 = t + N / 2u;
+  let i0 = (c * N + e0) * N + x;
+  let i1 = (c * N + e1) * N + x;
+  wa[bitrev(e0)] = inA[i0];
+  wa[bitrev(e1)] = inA[i1];
+  wb[bitrev(e0)] = inB[i0];
+  wb[bitrev(e1)] = inB[i1];
+  workgroupBarrier();
+  butterflies(t);
+  emit(x, e0, c, wa[e0], wb[e0]);
+  emit(x, e1, c, wa[e1], wb[e1]);
+}
+`;
+
+// Box-filter mip generation for the three simulation textures (array of cascades).
+const SIM_MIPS = /* wgsl */ `
+@group(0) @binding(0) var srcA: texture_2d_array<f32>;
+@group(0) @binding(1) var srcB: texture_2d_array<f32>;
+@group(0) @binding(2) var srcC: texture_2d_array<f32>;
+@group(0) @binding(3) var dstA: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(4) var dstB: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(5) var dstC: texture_storage_2d_array<rgba16float, write>;
+
+fn box(t: texture_2d_array<f32>, p: vec2i, l: u32) -> vec4f {
+  return 0.25 * (textureLoad(t, p, l, 0) + textureLoad(t, p + vec2i(1, 0), l, 0) +
+                 textureLoad(t, p + vec2i(0, 1), l, 0) + textureLoad(t, p + vec2i(1, 1), l, 0));
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let size = textureDimensions(dstA);
+  if (id.x >= size.x || id.y >= size.y) { return; }
+  let p = vec2i(id.xy) * 2;
+  textureStore(dstA, id.xy, id.z, box(srcA, p, id.z));
+  textureStore(dstB, id.xy, id.z, box(srcB, p, id.z));
+  textureStore(dstC, id.xy, id.z, box(srcC, p, id.z));
+}
+`;
+
+// Tileable foam micro-structure: R = bubble lace (multi-scale Worley edges),
+// G = finer lace, B = soft fbm density, A = streak noise.
+const FOAM_TEX = NOISE_WGSL + PERIODIC_WGSL + /* wgsl */ `
+@group(0) @binding(0) var dst: texture_storage_2d<rgba8unorm, write>;
+const SIZE: f32 = 512.0;
+
+fn h2(i: vec2i, salt: u32) -> vec2f {
+  let h = pcgHash((u32(i.x) * 73856093u) ^ pcgHash(u32(i.y) * 19349663u + salt));
+  let h2v = pcgHash(h + 0x9e3779b9u);
+  return vec2f(f32(h >> 8u), f32(h2v >> 8u)) / 16777216.0;
+}
+// "swiss cheese" foam: 1 in foam material, 0 inside bubbles; per-bubble radius
+fn bubbles(uv: vec2f, period: i32, salt: u32, rmin: f32, rmax: f32) -> f32 {
+  let w = vec2f(pfbm(uv * f32(period) * 0.5, period / 2, 3), pfbm(uv * f32(period) * 0.5 + 17.0, period / 2, 3));
+  let p = uv * f32(period) + w * 0.9;
+  let ip = vec2i(floor(p));
+  let fp = p - floor(p);
+  var v = 9.0;
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let o = vec2i(i, j);
+      let cell = ((ip + o) % period + period) % period;
+      let hh = h2(cell, salt);
+      let r = vec2f(o) + hh * 0.9 + 0.05 - fp;
+      let rad = mix(rmin, rmax, h2(cell, salt + 7u).x);
+      v = min(v, length(r) / rad);
+    }
+  }
+  return smoothstep(0.8, 1.25, v);
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let uv = (vec2f(id.xy) + 0.5) / SIZE;
+  // irregular holes from warped fbm (big sheets with ragged openings) ...
+  let w1 = vec2f(pfbm(uv * 5.0, 5, 3), pfbm(uv * 5.0 + vec2f(3.7, 9.1), 5, 3));
+  let m1 = smoothstep(-0.14, 0.06, pfbm(uv * 10.0 + w1 * 1.4, 10, 5));
+  let w2 = vec2f(pfbm(uv * 12.0 + 1.3, 12, 2), pfbm(uv * 12.0 + 7.9, 12, 2));
+  let m2 = smoothstep(-0.16, 0.04, pfbm(uv * 27.0 + w2 * 0.9, 27, 4));
+  // ... plus small round bubbles
+  let b3 = bubbles(uv, 29, 37u, 0.06, 0.45);
+  let b4 = bubbles(uv, 61, 53u, 0.05, 0.42);
+  let dens = pfbm(uv * 4.0, 4, 5) * 0.5 + 0.5;
+  let fineD = pfbm(uv * 16.0, 16, 3) * 0.5 + 0.5;
+  let big = m1 * (0.55 + 0.45 * m2) * (0.75 + 0.25 * b3);
+  let fine = 0.45 + 0.55 * b3 * (0.7 + 0.3 * b4);
+  let streak = pfbm(uv * vec2f(4.0, 16.0), 4, 5) * 0.5 + 0.5;
+  textureStore(dst, id.xy, vec4f(clamp(big * 0.6 + dens * 0.4, 0.0, 1.0), clamp(fine * 0.8 + fineD * 0.2, 0.0, 1.0), dens, streak));
+}
+`;
+
+const RGBA8_MIPS = /* wgsl */ `
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<rgba8unorm, write>;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let size = textureDimensions(dst);
+  if (id.x >= size.x || id.y >= size.y) { return; }
+  let p = vec2i(id.xy) * 2;
+  let v = 0.25 * (textureLoad(src, p, 0) + textureLoad(src, p + vec2i(1, 0), 0) +
+                  textureLoad(src, p + vec2i(0, 1), 0) + textureLoad(src, p + vec2i(1, 1), 0));
+  textureStore(dst, id.xy, v);
+}
+`;
+
+// World-space foam clipmaps (toroidally addressed, centred on the camera).
+// Foam is injected where the TOTAL surface Jacobian (all cascades) folds, then decays.
+const FOAM_RES = 1024;
+const FOAM_UPDATE = /* wgsl */ `
+const RES: i32 = ${FOAM_RES};
+struct FoamU {
+  snap: array<vec4i, 2>,     // per level: current camera texel (x, z), previous (x, z)
+  p0: vec4f,                 // texel size level 0, level 1, dt, decay rate
+  p1: vec4f,                 // J threshold, gain, growth, -
+  cascL: array<vec4f, 2>,
+  cascInvL: array<vec4f, 2>,
+  drift: vec4f,              // foam drift velocity (m/s) xz
+};
+@group(0) @binding(0) var<uniform> U: FoamU;
+@group(0) @binding(1) var prevTex: texture_2d_array<f32>;
+@group(0) @binding(2) var dst: texture_storage_2d_array<rgba16float, write>;
+@group(0) @binding(3) var dispTex: texture_2d_array<f32>;
+@group(0) @binding(4) var derivTex: texture_2d_array<f32>;
+@group(0) @binding(5) var samp: sampler;
+@group(0) @binding(6) var sampPrev: sampler;
+
+fn wrapIdx(i: i32, lo: i32) -> i32 { return lo + (((i - lo) % RES) + RES) % RES; }
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let lvl = id.z;
+  let sn = U.snap[lvl];
+  let ts = select(U.p0.x, U.p0.y, lvl == 1u);
+  let lo = sn.xy - vec2i(RES / 2);
+  let g = vec2i(wrapIdx(i32(id.x), lo.x), wrapIdx(i32(id.y), lo.y));
+  let plo = sn.zw - vec2i(RES / 2);
+  let inPrev = all(g >= plo) && all(g < plo + vec2i(RES));
+  let p = (vec2f(g) + 0.5) * ts;
+  var jxx = 0.0; var jzz = 0.0; var jxz = 0.0;
+  for (var c = 0u; c < ${CASCADES}u; c++) {
+    let texel = U.cascL[c >> 2u][c & 3u] / ${N}.0;
+    let lod = log2(max(ts / texel, 1.0));
+    if (lod < 7.5) {
+      let uv = p * U.cascInvL[c >> 2u][c & 3u];
+      let d = textureSampleLevel(derivTex, samp, uv, c, lod);
+      let a = textureSampleLevel(dispTex, samp, uv, c, lod);
+      jxx += d.z; jzz += d.w; jxz += a.w;
+    }
+  }
+  let J = (1.0 + jxx) * (1.0 + jzz) - jxz * jxz;
+  var prev = vec4f(0.0);
+  if (inPrev) {
+    // semi-Lagrangian advection: foam slowly drifts downwind (and spreads a little)
+    let back = (vec2f(id.xy) + 0.5 - U.drift.xy * U.p0.z / ts) / f32(RES);
+    prev = textureSampleLevel(prevTex, sampPrev, back, lvl, 0.0);
+  }
+  let dt = U.p0.z;
+  let inject = clamp((U.p1.x - J) * U.p1.y, 0.0, 1.0);
+  var f = prev.r * exp(-dt * U.p0.w);
+  f = max(f, inject);
+  f = min(f + inject * dt * U.p1.z, 1.6);
+  // g: freshness (recently injected) used for brighter, denser crest foam
+  let fresh = max(prev.g * exp(-dt * 1.6), inject);
+  textureStore(dst, id.xy, lvl, vec4f(f, fresh, J, 1.0));
+}
+`;
+
+const ARRAY16_MIPS = /* wgsl */ `
+@group(0) @binding(0) var src: texture_2d_array<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d_array<rgba16float, write>;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let size = textureDimensions(dst);
+  if (id.x >= size.x || id.y >= size.y) { return; }
+  let p = vec2i(id.xy) * 2;
+  let v = 0.25 * (textureLoad(src, p, id.z, 0) + textureLoad(src, p + vec2i(1, 0), id.z, 0) +
+                  textureLoad(src, p + vec2i(0, 1), id.z, 0) + textureLoad(src, p + vec2i(1, 1), id.z, 0));
+  textureStore(dst, id.xy, id.z, v);
+}
+`;
+
+// ---- js/wgsl/sky.js ----
+// Physically based atmosphere (Hillaire 2020 style LUTs) + procedural cloud deck.
+
+const ATMO_UNIFORM = /* wgsl */ `
+struct AtmoP { haze: vec4f };   // x = mie multiplier
+@group(0) @binding(0) var<uniform> A: AtmoP;
+`;
+
+const TRANS_LUT = ATMO_CORE_WGSL + ATMO_UNIFORM + /* wgsl */ `
+@group(0) @binding(1) var dst: texture_storage_2d<rgba16float, write>;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (f32(id.x) >= TRANS_W || f32(id.y) >= TRANS_H) { return; }
+  let uv = (vec2f(id.xy) + 0.5) / vec2f(TRANS_W, TRANS_H);
+  let rm = transUVToRMu(uv);
+  let ro = vec3f(0.0, rm.x, 0.0);
+  let rd = vec3f(sqrt(max(0.0, 1.0 - rm.y * rm.y)), rm.y, 0.0);
+  let tMax = raySphere(ro, rd, RT).y;
+  var od = vec3f(0.0);
+  let STEPS = 64u;
+  let dt = tMax / f32(STEPS);
+  for (var i = 0u; i < STEPS; i++) {
+    let p = ro + rd * ((f32(i) + 0.5) * dt);
+    od += medium(length(p) - RG, A.haze.x).ext * dt;
+  }
+  textureStore(dst, id.xy, vec4f(exp(-od), 1.0));
+}
+`;
+
+const MS_LUT = ATMO_CORE_WGSL + ATMO_UNIFORM + /* wgsl */ `
+@group(0) @binding(1) var transLUT: texture_2d<f32>;
+@group(0) @binding(2) var sampC: sampler;
+@group(0) @binding(3) var dst: texture_storage_2d<rgba16float, write>;
+
+fn sampleTrans(r: f32, mu: f32) -> vec3f {
+  return textureSampleLevel(transLUT, sampC, transRMuToUV(r, mu), 0.0).rgb;
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (f32(id.x) >= MS_SIZE || f32(id.y) >= MS_SIZE) { return; }
+  var uv = (vec2f(id.xy) + 0.5) / MS_SIZE;
+  uv = vec2f(fromSubUvsToUnit(uv.x, MS_SIZE), fromSubUvsToUnit(uv.y, MS_SIZE));
+  let cosSun = uv.x * 2.0 - 1.0;
+  let h = max(uv.y * (RT - RG), 0.01);
+  let r = RG + h;
+  let ro = vec3f(0.0, r, 0.0);
+  let sun = vec3f(sqrt(max(0.0, 1.0 - cosSun * cosSun)), cosSun, 0.0);
+  var Lsum = vec3f(0.0);
+  var Fsum = vec3f(0.0);
+  let SQ = 8u;
+  let STEPS = 20u;
+  for (var a = 0u; a < SQ; a++) {
+    for (var b = 0u; b < SQ; b++) {
+      let th = acos(1.0 - 2.0 * (f32(b) + 0.5) / f32(SQ));
+      let ph = 2.0 * PI * (f32(a) + 0.5) / f32(SQ);
+      let rd = vec3f(sin(th) * cos(ph), cos(th), sin(th) * sin(ph));
+      let tTop = raySphere(ro, rd, RT);
+      let tGr = raySphere(ro, rd, RG);
+      var tMax = tTop.y;
+      let hitG = tGr.x > 0.0;
+      if (hitG) { tMax = tGr.x; }
+      let dt = tMax / f32(STEPS);
+      var T = vec3f(1.0);
+      var L = vec3f(0.0);
+      var Fms = vec3f(0.0);
+      for (var s = 0u; s < STEPS; s++) {
+        let p = ro + rd * ((f32(s) + 0.5) * dt);
+        let pr = length(p);
+        let m = medium(pr - RG, A.haze.x);
+        let scat = m.rayS + vec3f(m.mieS);
+        let Ts = exp(-m.ext * dt);
+        let smu = dot(p, sun) / pr;
+        var sunT = sampleTrans(pr, smu);
+        if (sunBelowHorizon(pr, smu)) { sunT = vec3f(0.0); }
+        let ext = max(m.ext, vec3f(1e-9));
+        let S = scat * sunT / (4.0 * PI);
+        L += T * (S - S * Ts) / ext;
+        Fms += T * (scat - scat * Ts) / ext;
+        T *= Ts;
+      }
+      if (hitG) {
+        let pg = ro + rd * tMax;
+        let ng = normalize(pg);
+        let smu = dot(ng, sun);
+        L += T * sampleTrans(RG, smu) * max(smu, 0.0) * 0.06 / PI;
+      }
+      Lsum += L;
+      Fsum += Fms;
+    }
+  }
+  let invN = 1.0 / f32(SQ * SQ);
+  let L2 = Lsum * invN;
+  let fms = Fsum * invN;
+  textureStore(dst, id.xy, vec4f(L2 / (1.0 - fms), 1.0));
+}
+`;
+
+// Sky-view LUT, recomputed every frame (sun / camera altitude may change).
+const SKYVIEW_LUT = FRAME_WGSL + ATMO_CORE_WGSL + /* wgsl */ `
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var transLUT: texture_2d<f32>;
+@group(0) @binding(2) var msLUT: texture_2d<f32>;
+@group(0) @binding(3) var sampC: sampler;
+@group(0) @binding(4) var dst: texture_storage_2d<rgba16float, write>;
+const SKY_W: f32 = ${SKY_W}.0;
+const SKY_H: f32 = ${SKY_H}.0;
+
+fn sampleTrans(r: f32, mu: f32) -> vec3f {
+  return textureSampleLevel(transLUT, sampC, transRMuToUV(r, mu), 0.0).rgb;
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (f32(id.x) >= SKY_W || f32(id.y) >= SKY_H) { return; }
+  var uv = (vec2f(id.xy) + 0.5) / vec2f(SKY_W, SKY_H);
+  uv = vec2f(fromSubUvsToUnit(uv.x, SKY_W), fromSubUvsToUnit(uv.y, SKY_H));
+  let haze = F.atmo.x;
+  let r = RG + F.atmo.y;
+  let vHorizon = rhoOf(r);
+  let cosBeta = vHorizon / r;
+  let beta = acos(clamp(cosBeta, -1.0, 1.0));
+  let zha = PI - beta;
+  var vza: f32;
+  if (uv.y < 0.5) {
+    var coord = 2.0 * uv.y;
+    coord = 1.0 - coord;
+    coord *= coord;
+    coord = 1.0 - coord;
+    vza = zha * coord;
+  } else {
+    var coord = uv.y * 2.0 - 1.0;
+    coord *= coord;
+    vza = zha + beta * coord;
+  }
+  let vzc = cos(vza);
+  let vzs = sin(vza);
+  let cx = uv.x * uv.x;
+  let lvc = -(cx * 2.0 - 1.0);
+  let lvs = sqrt(max(0.0, 1.0 - lvc * lvc));
+  let rd = vec3f(vzs * lvc, vzc, vzs * lvs);
+  let smu = F.sunDir.y;
+  let sun = vec3f(sqrt(max(0.0, 1.0 - smu * smu)), smu, 0.0);
+  let ro = vec3f(0.0, r, 0.0);
+
+  let tTop = raySphere(ro, rd, RT);
+  let tGr = raySphere(ro, rd, RG);
+  var tMax = tTop.y;
+  if (tGr.x > 0.0) { tMax = tGr.x; }
+  let cosT = dot(rd, sun);
+  let pR = phaseRayleigh(cosT);
+  let pM = phaseMie(cosT, 0.84);
+  var L = vec3f(0.0);
+  var T = vec3f(1.0);
+  let STEPS = 48u;
+  var tPrev = 0.0;
+  for (var i = 0u; i < STEPS; i++) {
+    let fa = (f32(i) + 1.0) / f32(STEPS);
+    let tn = tMax * fa * fa;
+    let dt = tn - tPrev;
+    let t = tPrev + dt * 0.3;
+    tPrev = tn;
+    let p = ro + rd * t;
+    let pr = length(p);
+    let h = pr - RG;
+    let m = medium(h, haze);
+    let pmu = dot(p, sun) / pr;
+    var sunT = sampleTrans(pr, pmu);
+    if (sunBelowHorizon(pr, pmu)) { sunT = vec3f(0.0); }
+    let msuv = vec2f(fromUnitToSubUvs(pmu * 0.5 + 0.5, MS_SIZE), fromUnitToSubUvs(clamp(h / (RT - RG), 0.0, 1.0), MS_SIZE));
+    let ms = textureSampleLevel(msLUT, sampC, msuv, 0.0).rgb;
+    let S = sunT * (m.rayS * pR + vec3f(m.mieS * pM)) + ms * (m.rayS + vec3f(m.mieS));
+    let Ts = exp(-m.ext * dt);
+    let ext = max(m.ext, vec3f(1e-9));
+    L += T * (S - S * Ts) / ext;
+    T *= Ts;
+  }
+  textureStore(dst, id.xy, vec4f(L, 1.0));
+}
+`;
+
+// Functions for rendering the sky (background, env cube, ocean fog).
+// Requires: F (Frame), transLUT, skyLUT, sampC declared by the including module.
+const SKY_RENDER_FUNCS = NOISE_WGSL + /* wgsl */ `
+const SKY_W: f32 = ${SKY_W}.0;
+const SKY_H: f32 = ${SKY_H}.0;
+
+fn camR() -> f32 { return RG + F.atmo.y; }
+
+fn sampleTrans(r: f32, mu: f32) -> vec3f {
+  return textureSampleLevel(transLUT, sampC, transRMuToUV(r, mu), 0.0).rgb;
+}
+
+fn sunIlluminance() -> vec3f {
+  return sampleTrans(camR(), F.sunDir.y) * F.sunDir.w;
+}
+
+fn skyViewUV(dir: vec3f) -> vec2f {
+  let r = camR();
+  let vHorizon = rhoOf(r);
+  let cosBeta = vHorizon / r;
+  let beta = acos(clamp(cosBeta, -1.0, 1.0));
+  let zha = PI - beta;
+  let vzc = clamp(dir.y, -1.0, 1.0);
+  var uv: vec2f;
+  if (vzc >= -cosBeta) {
+    var coord = acos(vzc) / zha;
+    coord = 1.0 - coord;
+    coord = sqrt(max(coord, 0.0));
+    coord = 1.0 - coord;
+    uv.y = coord * 0.5;
+  } else {
+    var coord = (acos(vzc) - zha) / beta;
+    coord = sqrt(max(coord, 0.0));
+    uv.y = coord * 0.5 + 0.5;
+  }
+  let dl = length(dir.xz);
+  let sl = length(F.sunDir.xz);
+  var lvc = 1.0;
+  if (dl > 1e-6 && sl > 1e-6) { lvc = clamp(dot(dir.xz, F.sunDir.xz) / (dl * sl), -1.0, 1.0); }
+  uv.x = sqrt(max(-lvc * 0.5 + 0.5, 0.0));
+  return vec2f(fromUnitToSubUvs(uv.x, SKY_W), fromUnitToSubUvs(uv.y, SKY_H));
+}
+
+fn skyAtmo(dir: vec3f) -> vec3f {
+  return textureSampleLevel(skyLUT, sampC, skyViewUV(dir), 0.0).rgb * F.sunDir.w;
+}
+`;
+
+// Clouds + full sky radiance (needs the same bindings as SKY_RENDER_FUNCS).
+// Lightweight 3D volumetric density cache: smooth multi-scale field with
+// elongated cloud banks and height-dependent stratification. Retains the
+// original jeantimex volume ray-marching architecture while replacing its
+// expensive Blender 4D density kernel for mobile GPU compatibility.
+const CLOUD_CACHE_SHADER = /* wgsl */ `
+struct CloudParams {
+  time_pack: vec4f, alt_pack: vec4f, scale_pack: vec4f,
+  extra_pack: vec4f, cache_pack: vec4f, bounds_pack: vec4f,
+};
+@group(0) @binding(0) var<uniform> params: CloudParams;
+@group(0) @binding(1) var densityStore: texture_storage_3d<rgba16float,write>;
+fn hash3(p: vec3f) -> f32 {
+  let q = fract(p * vec3f(0.1031, 0.1030, 0.0973));
+  let t = q + vec3f(dot(q, q.yxz + vec3f(33.33)));
+  return fract((t.x + t.y) * t.z);
+}
+fn n3(p: vec3f) -> f32 {
+  let a = floor(p); let f = fract(p); let u=f*f*(vec3f(3.0)-2.0*f);
+  let b00=mix(hash3(a),hash3(a+vec3f(1.0,0.0,0.0)),u.x);
+  let b10=mix(hash3(a+vec3f(0.0,1.0,0.0)),hash3(a+vec3f(1.0,1.0,0.0)),u.x);
+  let b01=mix(hash3(a+vec3f(0.0,0.0,1.0)),hash3(a+vec3f(1.0,0.0,1.0)),u.x);
+  let b11=mix(hash3(a+vec3f(0.0,1.0,1.0)),hash3(a+vec3f(1.0,1.0,1.0)),u.x);
+  return mix(mix(b00,b10,u.y),mix(b01,b11,u.y),u.z);
+}
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let dim=textureDimensions(densityStore);
+  if(any(id>=dim)){return;}
+  let uv=(vec3f(id)+vec3f(0.5))/vec3f(dim);
+  let world=mix(vec3f(-11.0,0.65,-16.0),vec3f(11.0,params.bounds_pack.x,11.0),uv);
+  let drift=params.time_pack.x;
+  // Same 0.009 clock, with enough spatial shift to make the slow drift visible.
+  let wide=vec3f(world.x*0.24+drift*0.58,world.y*0.32,world.z*0.37-drift*0.36);
+  let largeScaleDensity=n3(wide)+0.30*n3(wide*2.3)+0.12*n3(wide*5.2);
+  let banks=n3(vec3f(world.x*0.15+drift*0.12,0.47,world.z*0.20-drift*0.045));
+  let gaps=smoothstep(0.38,0.66,banks);
+  let cloudiness=largeScaleDensity-0.49+(params.alt_pack.z-0.5)*0.18;
+  var d=smoothstep(0.03,0.32,cloudiness)*gaps;
+  let h=uv.y;
+  let vertical=smoothstep(0.12,0.30,h)*(1.0-smoothstep(0.65,0.91,h));
+  d*=vertical*params.time_pack.w*1.15;
+  textureStore(densityStore,vec3i(id),vec4f(d,0.0,0.0,1.0));
+}`;
+
+const SKY_CLOUD_FUNCS = /* wgsl */ `
+
+// Density comes from jeantimex/procedural-clouds (ported WGSL 4D noise / Voronoi).
+// Scattering uses Noniv's actual solar transmittance and sky-view radiance.
+const CLOUD_MIN = vec3f(-11.0, 0.65, -16.0);
+const CLOUD_MAX = vec3f(11.0, 3.1, 11.0);
+fn cloudSample(p: vec3f) -> f32 {
+  let uvw = (p - CLOUD_MIN) / (CLOUD_MAX - CLOUD_MIN);
+  if (any(uvw < vec3f(0.001)) || any(uvw > vec3f(0.999))) { return 0.0; }
+  return textureSampleLevel(cloudDensityTex, cloudSampler, uvw, 0.0).r;
+}
+struct CloudInterval { nearT: f32, farT: f32, valid: bool };
+fn cloudIntersect(rd: vec3f) -> CloudInterval {
+  let ro = vec3f(0.0, 0.19, 0.0);
+  let safeD = sign(rd) * max(abs(rd), vec3f(0.00001));
+  let lo = (CLOUD_MIN-ro)/safeD;
+  let hi = (CLOUD_MAX-ro)/safeD;
+  let tn = max(max(min(lo.x,hi.x), min(lo.y,hi.y)), min(lo.z,hi.z));
+  let tf = min(min(max(lo.x,hi.x), max(lo.y,hi.y)), max(lo.z,hi.z));
+  return CloudInterval(max(tn,0.0),tf,tf>max(tn,0.0));
+}
+fn volumeSunShadow(p: vec3f) -> f32 {
+  var t = 0.0;
+  // A longer horizontal ray at sunset traverses substantially more cloud mass.
+  for(var i=0;i<5;i++) {
+    let q = p + F.sunDir.xyz*(0.24+f32(i)*0.68);
+    t += cloudSample(q)*0.68;
+  }
+  return exp(-t*1.15);
+}
+fn volumeClouds(dir: vec3f, steps: i32, withScattering: bool) -> vec4f {
+  if (dir.y<0.012 || F.cloudP.y<0.001) {return vec4f(0.0);}
+  let hit = cloudIntersect(dir);
+  if (!hit.valid) {return vec4f(0.0);}
+  let dt = (hit.farT-hit.nearT)/f32(steps);
+  if(dt<=0.0){return vec4f(0.0);}
+  var T=1.0;
+  var radiance=vec3f(0.0);
+  let cosTheta=clamp(dot(dir,F.sunDir.xyz),-1.0,1.0);
+  let phase = mix(phaseHG(cosTheta,0.65),phaseHG(cosTheta,-0.15),0.15);
+  // The same atmospheric terms used to light the ocean and the background sky.
+  let zenith = skyAtmo(vec3f(0.0,1.0,0.0));
+  let horizon = skyAtmo(normalize(vec3f(dir.x,0.095,dir.z)));
+  let ambient = zenith*0.32 + horizon*0.34;
+  let directSun = sampleTrans(RG+1.7,F.sunDir.y)*F.sunDir.w;
+  for(var i=0;i<steps;i++) {
+    let p=vec3f(0.0,0.19,0.0)+dir*(hit.nearT+(f32(i)+0.5)*dt);
+    let d=cloudSample(p);
+    if(d>0.008) {
+      let optical=d*dt*1.12*F.cloudP.z;
+      let stepA=1.0-exp(-optical);
+      if(withScattering) {
+        let shadow=volumeSunShadow(p);
+        let forward=clamp(phase*7.0,0.04,1.45);
+        // Frontlit clouds get diffuse sky-light, while thin sun-facing edges
+        // get strongly directional sunset color from the transmittance LUT.
+        let solar=directSun*shadow*forward*0.16;
+        let side=ambient*(0.85+0.15*shadow);
+        radiance+=T*stepA*(side+solar);
+      }
+      T*=1.0-stepA;
+      if(T<0.025){break;}
+    }
+  }
+  let a=1.0-T;
+  // Clouds fade physically towards the haze-filled horizon.
+  let hazeFade=smoothstep(0.012,0.08,dir.y);
+  return vec4f(radiance*hazeFade,a*hazeFade);
+}
+fn sunDisk(dir: vec3f) -> vec3f {
+  let c = dot(dir, F.sunDir.xyz);
+  let ang = sqrt(max(2.0 * (1.0 - c), 0.0));
+  let pix = F.screen.w * 2.0 * length(F.camUp.xyz) * 0.75;
+  let visualRadius = SUN_ANG_R * 1.18;
+  let edge = 1.0 - smoothstep(visualRadius - pix, visualRadius + pix, ang);
+  if (edge <= 0.0) { return vec3f(0.0); }
+  let x = min(ang / visualRadius, 1.0);
+  let mu = sqrt(max(1.0 - x * x, 0.0));
+  let limb = vec3f(1.0) - vec3f(0.397, 0.503, 0.652) * (1.0 - mu);
+  // Keep solar radiance finite for rgba16float, but near the safe HDR ceiling:
+  // the previous 24000 limit suppressed the bloom that made the sun look large.
+  let rad = min(F.sunDir.w / (PI * SUN_ANG_R * SUN_ANG_R), 52000.0);
+  return rad * limb * edge * sampleTrans(camR(), max(dir.y, -0.01));
+}
+
+fn skyRadiance(dirIn: vec3f, withSun: bool, pixAng: f32) -> vec3f {
+  var dir=dirIn;
+  dir.y=max(dir.y,0.0005);
+  dir=normalize(dir);
+  let c=volumeClouds(dir, 8, true);
+  var out=skyAtmo(dir)*(1.0-c.a)+c.rgb;
+  if(withSun) {
+    let nearSun=dot(dir,F.sunDir.xyz)>0.999;
+    if(nearSun){
+      let a=volumeClouds(F.sunDir.xyz,7,false).a;
+      out+=sunDisk(dir)*(1.0-a);
+    }
+  }
+  return out;
+}
+
+`;
+
+const ENV_CUBE = FRAME_WGSL + ATMO_CORE_WGSL + /* wgsl */ `
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var transLUT: texture_2d<f32>;
+@group(0) @binding(2) var skyLUT: texture_2d<f32>;
+@group(0) @binding(3) var sampC: sampler;
+@group(0) @binding(4) var dst: texture_storage_2d_array<rgba16float, write>;
+
+@group(0) @binding(5) var cloudDensityTex: texture_3d<f32>;
+@group(0) @binding(6) var cloudSampler: sampler;
+` + SKY_RENDER_FUNCS + SKY_CLOUD_FUNCS + /* wgsl */ `
+const ENV: f32 = ${ENV_SIZE}.0;
+fn faceDir(face: u32, uv: vec2f) -> vec3f {
+  let u = uv.x * 2.0 - 1.0;
+  let v = uv.y * 2.0 - 1.0;
+  switch (face) {
+    case 0u: { return vec3f(1.0, -v, -u); }
+    case 1u: { return vec3f(-1.0, -v, u); }
+    case 2u: { return vec3f(u, 1.0, v); }
+    case 3u: { return vec3f(u, -1.0, -v); }
+    case 4u: { return vec3f(u, -v, 1.0); }
+    default: { return vec3f(-u, -v, -1.0); }
+  }
+}
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (f32(id.x) >= ENV || f32(id.y) >= ENV) { return; }
+  // faces are refreshed round-robin: face = (frame + z) % 6
+  let face = (u32(F.post.z) + id.z) % 6u;
+  let dir = normalize(faceDir(face, (vec2f(id.xy) + 0.5) / ENV));
+  var L: vec3f;
+  if (dir.y >= 0.0) {
+    L = skyRadiance(dir, false, 1.5708 / ENV * 1.5);
+  } else {
+    // below the horizon: what a reflected ray would see -> far, hazy ocean
+    let hz = skyRadiance(normalize(vec3f(dir.x, 0.004, dir.z)), false, 1.5708 / ENV * 1.5);
+    let body = F.waterCol.rgb * (sunIlluminance() * max(F.sunDir.y, 0.0) + skyAtmo(vec3f(0.0, 1.0, 0.0)) * 2.0);
+    L = mix(hz * 0.75, body, clamp(-dir.y * 6.0, 0.0, 1.0));
+  }
+  textureStore(dst, id.xy, face, vec4f(L, 1.0));
+}
+`;
+
+const CUBE_MIPS = /* wgsl */ `
+@group(0) @binding(0) var src: texture_2d_array<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d_array<rgba16float, write>;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  let size = textureDimensions(dst);
+  if (id.x >= size.x || id.y >= size.y) { return; }
+  let srcSize = vec2i(textureDimensions(src));
+  let p = vec2i(id.xy) * 2;
+  // 4x4 tent-ish filter for smoother roughness blur
+  var acc = vec4f(0.0);
+  var wsum = 0.0;
+  for (var j = -1; j <= 2; j++) {
+    for (var i = -1; i <= 2; i++) {
+      let q = clamp(p + vec2i(i, j), vec2i(0), srcSize - 1);
+      let w = select(1.0, 3.0, i == 0 || i == 1) * select(1.0, 3.0, j == 0 || j == 1);
+      acc += textureLoad(src, q, id.z, 0) * w;
+      wsum += w;
+    }
+  }
+  textureStore(dst, id.xy, id.z, acc / wsum);
+}
+`;
+
+// Cloud transmittance towards the sun (averaged over the solar disc), used to dim
+// direct sunlight on the water when the sun is behind clouds.
+const SUN_VIS = FRAME_WGSL + ATMO_CORE_WGSL + /* wgsl */ `
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var transLUT: texture_2d<f32>;
+@group(0) @binding(2) var skyLUT: texture_2d<f32>;
+@group(0) @binding(3) var sampC: sampler;
+@group(0) @binding(4) var<storage, read_write> sunVis: array<f32, 4>;
+
+@group(0) @binding(5) var cloudDensityTex: texture_3d<f32>;
+@group(0) @binding(6) var cloudSampler: sampler;
+` + SKY_RENDER_FUNCS + SKY_CLOUD_FUNCS + /* wgsl */ `
+@compute @workgroup_size(1)
+fn main() {
+  let c=volumeClouds(F.sunDir.xyz,7,false);
+  sunVis[0]=clamp(1.0-c.a,0.0,1.0);
+}
+`;
+
+const RENDER_BINDINGS = /* wgsl */ `
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var transLUT: texture_2d<f32>;
+@group(0) @binding(2) var skyLUT: texture_2d<f32>;
+@group(0) @binding(3) var sampC: sampler;
+`;
+
+// Full-resolution sky + clouds. Cloud silhouettes are anti-aliased analytically: the
+// screen-space derivative of each layer's edge function sets the width of its opacity edge.
+const SKY_BG = FRAME_WGSL + ATMO_CORE_WGSL + RENDER_BINDINGS + /* wgsl */ `
+// Bindings 0-3 come from RENDER_BINDINGS; the sky's only extra resources
+// must be 4 and 5, matching the sequential createBindGroup helper.
+@group(0) @binding(4) var cloudDensityTex: texture_3d<f32>;
+@group(0) @binding(5) var cloudSampler: sampler;
+` + SKY_RENDER_FUNCS + SKY_CLOUD_FUNCS + /* wgsl */ `
+struct VO { @builtin(position) pos: vec4f, @location(0) ndc: vec2f };
+@vertex fn vs(@builtin(vertex_index) i: u32) -> VO {
+  let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u)) * 2.0 - 1.0;
+  var o: VO;
+  o.pos = vec4f(p, 0.0, 1.0);
+  o.ndc = p;
+  return o;
+}
+@fragment fn fs(in: VO) -> @location(0) vec4f {
+  let dir=normalize(F.camFwd.xyz + in.ndc.x*F.camRight.xyz + in.ndc.y*F.camUp.xyz);
+  return vec4f(skyRadiance(dir,true,2.0/F.screen.y),1.0);
+}
+`;
+
+const OCEAN = FRAME_WGSL + ATMO_CORE_WGSL + RENDER_BINDINGS + /* wgsl */ `
+@group(0) @binding(4) var dispTex: texture_2d_array<f32>;
+@group(0) @binding(5) var derivTex: texture_2d_array<f32>;
+@group(0) @binding(6) var momTex: texture_2d_array<f32>;
+@group(0) @binding(7) var foamTex: texture_2d<f32>;
+@group(0) @binding(8) var envCube: texture_cube<f32>;
+@group(0) @binding(9) var sampR: sampler;
+@group(0) @binding(10) var foamWorld: texture_2d_array<f32>;
+@group(0) @binding(11) var<storage, read> sunVis: array<f32, 4>;
+` + SKY_RENDER_FUNCS + /* wgsl */ `
+const ENV_MAXMIP: f32 = ${ENV_MIPS - 1}.0;
+const ENV_TEXELS_PER_RAD: f32 = ${ENV_SIZE}.0 / 1.5708;
+const TEX_N: f32 = ${N}.0;
+
+struct VSOut {
+  @builtin(position) pos: vec4f,
+  @location(0) rel: vec3f,     // displaced position relative to the camera
+  @location(1) xz: vec2f,      // undisplaced (lagrangian) coordinates
+  @location(2) height: f32,
+};
+
+@vertex fn vs(@builtin(vertex_index) vi: u32, @location(0) inst: vec4f) -> VSOut {
+  let n = u32(F.lodP.y);
+  let g = vec2f(f32(vi % (n + 1u)), f32(vi / (n + 1u)));
+  let spacing = inst.z / f32(n);
+  var xz = inst.xy + g * spacing;
+  // CDLOD morph towards the next coarser level
+  let R = F.lodP.x * exp2(inst.w);
+  let d = distance(vec3f(xz.x, 0.0, xz.y), F.camPos.xyz);
+  let mk = clamp((d - 0.8 * R) / (0.2 * R), 0.0, 1.0);
+  xz -= fract(g * 0.5) * 2.0 * spacing * mk;
+  let eff = spacing * (1.0 + mk);
+  var disp = vec3f(0.0);
+  for (var c = 0u; c < ${CASCADES}u; c++) {
+    let texel = F.cascL[c >> 2u][c & 3u] / TEX_N;
+    let lod = log2(max(eff / texel, 1.0)) + 0.5;
+    if (lod < 8.0) {
+      disp += textureSampleLevel(dispTex, sampR, xz * F.cascInvL[c >> 2u][c & 3u], c, lod).xyz;
+    }
+  }
+  var o: VSOut;
+  let world = vec3f(xz.x + disp.x, disp.y, xz.y + disp.z);
+  o.rel = world - F.camPos.xyz;
+  o.pos = F.viewProj * vec4f(o.rel, 1.0);
+  o.xz = xz;
+  o.height = disp.y;
+  return o;
+}
+
+fn fresnelWater(c: f32) -> f32 {
+  // Schlick with F0 for n = 1.333
+  let x = 1.0 - clamp(c, 0.0, 1.0);
+  let x2 = x * x;
+  return 0.02 + 0.98 * x2 * x2 * x;
+}
+
+fn lambdaSmith(w: vec3f, cov: vec3f) -> f32 {
+  let xz2 = max(dot(w.xz, w.xz), 1e-8);
+  let il = inverseSqrt(xz2);
+  let az = w.xz * il;
+  let sig2 = az.x * az.x * cov.x + az.y * az.y * cov.y + 2.0 * az.x * az.y * cov.z;
+  let cotT = w.y * il;
+  let a = max(cotT, 1e-3) / sqrt(2.0 * max(sig2, 1e-7));
+  if (a >= 1.6) { return 0.0; }
+  return (1.0 - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a);
+}
+
+fn foamPattern(xz: vec2f, t: f32) -> f32 {
+  let a = textureSample(foamTex, sampR, xz * 0.23 + vec2f(0.013, 0.0) * t).r;
+  let b = textureSample(foamTex, sampR, xz * 0.71 + vec2f(0.37, 0.71)).g;
+  return a * 0.78 + b * 0.22;
+}
+
+@fragment fn fs(in: VSOut) -> @location(0) vec4f {
+  let xz = in.xz;
+  var s = vec2f(0.0);
+  var jxx = 0.0;
+  var jzz = 0.0;
+  var jxz = 0.0;
+  var cov = vec3f(0.0);
+  // wind gusts ("cat's paws"): patches where the short ripples are stronger or calmer
+  let gustN = textureSample(foamTex, sampR, xz * 0.011 + F.windP[0].xy * (F.camPos.w * 0.0004)).b;
+  let gust = mix(0.35, 1.2, smoothstep(0.3, 0.72, gustN));
+  for (var c = 0u; c < ${CASCADES}u; c++) {
+    let uv = xz * F.cascInvL[c >> 2u][c & 3u];
+    let gk = mix(1.0, gust, select(0.0, select(0.5, 1.0, c >= 4u), c >= 3u));
+    let dv = textureSample(derivTex, sampR, uv, c) * gk;
+    let mv = textureSample(momTex, sampR, uv, c) * (gk * gk);
+    let av = textureSample(dispTex, sampR, uv, c) * gk;
+    s += dv.xy;
+    jxx += dv.z;
+    jzz += dv.w;
+    jxz += av.w;
+    cov += vec3f(max(mv.x - dv.x * dv.x, 0.0), max(mv.y - dv.y * dv.y, 0.0), mv.z - dv.x * dv.y);
+  }
+  let dist = length(in.rel);
+  let V = -in.rel / dist;
+  let Ld = F.sunDir.xyz;
+
+  // slope statistics (LEAN): add unresolved capillary roughness + sun disk size
+  // unresolved roughness; grows with distance to reach Cox-Munk-like totals in the far sheen
+  let unres = F.waterCol.w + 0.0035 * smoothstep(30.0, 500.0, dist);
+  cov.x += unres;
+  cov.y += unres;
+  let jx = max(1.0 + jxx, 0.15);
+  let jz = max(1.0 + jzz, 0.15);
+  let sl = vec2f(s.x / jx, s.y / jz);
+  let nrm = normalize(vec3f(-sl.x, 1.0, -sl.y));
+  // specular anti-aliasing: slope variation across the pixel widens the lobe
+  let dsx = dpdx(sl);
+  let dsy = dpdy(sl);
+  let aa = vec3f(dsx.x * dsx.x + dsy.x * dsy.x, dsx.y * dsx.y + dsy.y * dsy.y, dsx.x * dsx.y + dsy.x * dsy.y) * 0.5;
+  cov += aa * min(1.0, 0.03 / max(max(aa.x, aa.y), 1e-8));
+  let J = (1.0 + jxx) * (1.0 + jzz) - jxz * jxz;
+
+  let sunE = sunIlluminance() * sunVis[0];
+  let skyUp = textureSampleLevel(envCube, sampC, vec3f(0.0, 1.0, 0.0), ENV_MAXMIP).rgb;
+  // average radiance of the whole upper hemisphere (incl. the bright horizon band)
+  let skyHemi = skyUp * 0.4 + 0.15 * (
+      textureSampleLevel(envCube, sampC, vec3f(0.94, 0.34, 0.0), ENV_MAXMIP - 1.0).rgb +
+      textureSampleLevel(envCube, sampC, vec3f(-0.94, 0.34, 0.0), ENV_MAXMIP - 1.0).rgb +
+      textureSampleLevel(envCube, sampC, vec3f(0.0, 0.34, 0.94), ENV_MAXMIP - 1.0).rgb +
+      textureSampleLevel(envCube, sampC, vec3f(0.0, 0.34, -0.94), ENV_MAXMIP - 1.0).rgb);
+  let skyN = textureSampleLevel(envCube, sampC, nrm, ENV_MAXMIP - 1.0).rgb;
+
+  // ---- sun glitter: anisotropic Gaussian slope distribution ----
+  // V8.1: the ocean preset's large uniform slope-variance floor made
+  // nearly every calm-water pixel contribute to a continuous bright stripe.
+  // Retain measured wave variance and pixel AA; use a smaller lake-glitter
+  // floor so resolved wave facets determine where individual highlights land.
+  let glitterFloor = 0.00016 + 0.0009 * smoothstep(45.0, 450.0, dist);
+  let sunCov = vec3f(max(cov.x - unres, 0.0) + glitterFloor,
+                    max(cov.y - unres, 0.0) + glitterFloor, cov.z);
+  let Hv = normalize(V + Ld);
+  let hs = -Hv.xz / max(Hv.y, 1e-3);
+  let dsl = hs - sl;
+  let det = max(sunCov.x * sunCov.y - sunCov.z * sunCov.z, 1e-10);
+  let e = (dsl.x * dsl.x * sunCov.y + dsl.y * dsl.y * sunCov.x - 2.0 * dsl.x * dsl.y * sunCov.z) / det;
+  let pdf = exp(-0.5 * e) / (2.0 * PI * sqrt(det));
+  let hy2 = Hv.y * Hv.y;
+  let Dm = pdf / max(hy2 * hy2, 1e-6);
+  let G = 1.0 / (1.0 + lambdaSmith(V, sunCov) + lambdaSmith(Ld, sunCov));
+  let Fh = fresnelWater(dot(V, Hv));
+  let spec = sunE * 0.55 * (Fh * Dm * G / (4.0 * max(V.y, 0.02))) * smoothstep(-0.012, 0.010, Ld.y);
+
+  // ---- sky reflection ----
+  // At grazing angles the *visible* facets are biased towards the viewer (projected-area
+  // weighting + masking), so the effective reflector tilts up and sees higher, greyer sky.
+  let sig = sqrt(max(cov.x + cov.y, 1e-6) * 0.5);
+  let vh = normalize(vec3f(V.x, 0.0, V.z) + vec3f(1e-5, 0.0, 0.0));
+  let sigV = sqrt(max(vh.x * vh.x * cov.x + vh.z * vh.z * cov.y + 2.0 * vh.x * vh.z * cov.z, 1e-6));
+  let aV = max(V.y, 1e-3) / max(sqrt(1.0 - V.y * V.y), 1e-3) / (1.4142 * sigV);
+  let tilt = 0.32 * sigV * (1.0 - smoothstep(0.0, 2.5, aV));
+  let nV = normalize(nrm + vh * tilt);
+  var R = reflect(-V, nV);
+  R.y = abs(R.y) * 0.4 + max(R.y, 0.0) * 0.6;
+  R = normalize(R);
+  let envLod = clamp(log2(max(2.0 * sig * ENV_TEXELS_PER_RAD, 1.0)), 0.0, ENV_MAXMIP);
+  let refl = textureSampleLevel(envCube, sampC, R, envLod).rgb;
+  let NdV = max(dot(nV, V), 0.0);
+  // Fresnel from a partially smoothed normal: the long-wave facet plus the grazing-angle
+  // statistics of everything finer (visible facets at grazing incidence stay highly reflective)
+  let nF = normalize(mix(nrm, vec3f(0.0, 1.0, 0.0), 0.45));
+  let Fr = fresnelWater(max(dot(nF, V), 0.0));
+
+  // ---- water body: upwelling scatter + backlit subsurface glow ----
+  let ambient = skyUp * 1.3 + skyN * 0.5;
+  let NdL = max(dot(nrm, Ld), 0.0);
+  // upwelling light is diffuse: light it with smooth terms only (no per-pixel normal noise)
+  var body = F.waterCol.rgb * (skyHemi * 1.6 + sunE * max(Ld.y, 0.0) * 0.8);
+  // light transmitted through the thin upper part of backlit crests
+  let crest = clamp((in.height - 0.05) / 0.9, 0.0, 1.0);
+  let toSun = max(dot(Ld, -V), 0.0);
+  let thin = pow(clamp(0.5 - 0.5 * dot(Ld, nrm), 0.0, 1.0), 3.0);
+  let k1 = F.sssCol.w * crest * crest * pow(toSun, 4.0) * thin * exp(-dist / 600.0);
+  body += F.sssCol.rgb * sunE * k1;
+
+  // ---- foam ----
+  // persistent foam from the world-space clipmaps (near: fine, far: coarse), plus
+  // instantaneous crest foam from the per-pixel Jacobian for anything beyond them
+  let dc = abs(xz - F.camPos.xz);
+  let cheb = max(dc.x, dc.y);
+  let w0 = 1.0 - smoothstep(0.30 * F.lodP.z, 0.45 * F.lodP.z, cheb);
+  let w1 = 1.0 - smoothstep(0.30 * F.lodP.w, 0.45 * F.lodP.w, cheb);
+  let fw0 = textureSample(foamWorld, sampR, xz / F.lodP.z, 0u);
+  let fw1 = textureSample(foamWorld, sampR, xz / F.lodP.w, 1u);
+  let fwl = mix(fw1, fw0, w0) * w1;
+  let fresh = clamp((F.foamP.x - J) * F.foamP.y, 0.0, 1.0);
+  var cover = clamp((max(fwl.r, fresh * (1.0 - w1 * 0.7)) + fwl.g * 0.6) * F.foamP.z, 0.0, 1.5);
+  // aged foam breaks into wind-aligned streaks; fresh crest foam stays dense
+  let wd = F.windP[0].xy;
+  let ws = vec2f(dot(xz, wd), dot(xz, vec2f(-wd.y, wd.x)));
+  let streak = textureSample(foamTex, sampR, ws * vec2f(0.035, 0.11)).a;
+  let freshK = clamp(fwl.g * 2.0 + fresh, 0.0, 1.0);
+  cover *= mix(smoothstep(0.25, 0.75, streak) * 1.5, 1.0, freshK);
+  let pat = foamPattern(xz, F.camPos.w);
+  let fw = fwidth(pat) + 0.03;
+  // soft threshold: thin foam is a translucent film, dense foam is opaque white
+  // dense foam has crisp edges, thin decaying foam a soft translucent margin
+  let soft = 0.04 + 0.14 * (1.0 - clamp(cover, 0.0, 1.0));
+  let fm = smoothstep(1.0 - cover - fw - soft, 1.0 - cover + fw + soft, pat);
+  var foamMask = clamp(fm * smoothstep(0.0, 0.5, cover), 0.0, 1.0) * (0.68 + 0.32 * smoothstep(0.3, 0.9, cover));
+  // freshly broken crests: dense, almost opaque core
+  foamMask = max(foamMask, smoothstep(0.35, 0.9, fwl.g) * smoothstep(0.25, 0.6, pat + 0.25) * 0.95);
+  // submerged bubbles brighten and tint the water just beneath foam
+  body += F.sssCol.rgb * (sunE * 0.05 + ambient * 0.35) * clamp(cover, 0.0, 1.0);
+  body += vec3f(0.10, 0.32, 0.30) * skyUp * fwl.g * 0.35;
+  // bubbly brightness variation inside the foam
+  let bub = textureSample(foamTex, sampR, xz * 1.9 + vec2f(0.21, 0.53)).g;
+  let foamAlb = vec3f(0.82, 0.87, 0.92) * (0.78 + 0.3 * bub);
+  // diffuse: albedo * (sky irradiance / pi + sun * cos / pi); sky dominates at sunset
+  // foam scatters light from the whole hemisphere (incl. the cool zenith): use a less saturated ambient
+  let foamAmb = skyHemi * 1.0 + skyN * 0.3;
+  let foamAmbN = mix(foamAmb, vec3f(dot(foamAmb, vec3f(0.2126, 0.7152, 0.0722))), 0.85);
+  // grazing sun is largely self-shadowed by the foam's lumpy micro-structure
+  let foamLit = foamAlb * (sunE * max(dot(nrm, Ld), 0.0) * 0.318 * 0.5 + foamAmbN * 1.55);
+
+  if (F.post.w > 0.5) {
+    // debug: r = foam cover, g = clamp(J), b = world foam level-0 weight
+    if (F.post.w < 1.5) { return vec4f(cover, clamp(J * 0.5, 0.0, 1.0), w0 * 0.3, 1.0) * 0.2; }
+    if (F.post.w > 2.5 && F.post.w < 3.5) { return vec4f(refl, 1.0); }
+    if (F.post.w > 3.5 && F.post.w < 4.5) { return vec4f(vec3f(Fr), 1.0) * 0.5; }
+    if (F.post.w > 4.5 && F.post.w < 5.5) { return vec4f(body * (1.0 - Fr), 1.0); }
+    if (F.post.w > 5.5 && F.post.w < 6.5) { return vec4f(foamLit, 1.0); }
+    if (F.post.w > 6.5 && F.post.w < 7.5) { return vec4f(skyUp, 1.0); }
+    return vec4f(fwl.r, fwl.g, fresh, 1.0) * 0.2;
+  }
+  var col = body * (1.0 - Fr) + refl * Fr + spec;
+  col = mix(col, foamLit, foamMask * 0.95);
+
+  // ---- aerial perspective ----
+  // aerial perspective: atmosphere extinction plus a marine haze floor
+  let T = exp(-max(F.fogExt.rgb, vec3f(F.fogExt.w)) * dist);
+  let hz = normalize(vec3f(-V.x, 0.002, -V.z));
+  let fogCol = skyAtmo(hz);
+  col = col * T + fogCol * (1.0 - T);
+  return vec4f(col, 1.0);
+}
+`;
+
+// Samples the displaced surface height under the camera (inverting the horizontal
+// displacement with a few fixed-point iterations).
+const HEIGHT_PROBE = FRAME_WGSL + /* wgsl */ `
+@group(0) @binding(0) var<uniform> F: Frame;
+@group(0) @binding(1) var dispTex: texture_2d_array<f32>;
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var<storage, read_write> outH: array<f32, 4>;
+fn dispAt(xz: vec2f) -> vec3f {
+  var d = vec3f(0.0);
+  for (var c = 0u; c < ${CASCADES}u; c++) {
+    d += textureSampleLevel(dispTex, samp, xz * F.cascInvL[c >> 2u][c & 3u], c, 0.0).xyz;
+  }
+  return d;
+}
+@compute @workgroup_size(1)
+fn main() {
+  let goal = F.camPos.xz;
+  var x0 = goal;
+  for (var i = 0; i < 4; i++) {
+    let d = dispAt(x0);
+    x0 = goal - d.xz;
+  }
+  outH[0] = dispAt(x0).y;
+}
+`;
+
+// ---- js/wgsl/post.js ----
+// Bloom (dual-filter chain) and final composite with AgX tonemapping.
+const FS_TRI = /* wgsl */ `
+struct VO { @builtin(position) pos: vec4f, @location(0) uv: vec2f };
+@vertex fn vs(@builtin(vertex_index) i: u32) -> VO {
+  let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+  var o: VO;
+  o.pos = vec4f(p * 2.0 - 1.0, 0.0, 1.0);
+  o.uv = vec2f(p.x, 1.0 - p.y);
+  return o;
+}
+`;
+
+const BLOOM_DOWN = FS_TRI + /* wgsl */ `
+struct P { texel: vec4f };   // xy = 1/src size, z = first pass (karis + threshold)
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var<uniform> U: P;
+fn luma(c: vec3f) -> f32 { return dot(c, vec3f(0.2126, 0.7152, 0.0722)); }
+fn tap(uv: vec2f) -> vec3f { return textureSampleLevel(src, samp, uv, 0.0).rgb; }
+fn karis(c: vec3f) -> f32 { return 1.0 / (1.0 + luma(c) * 0.25); }
+@fragment fn fs(in: VO) -> @location(0) vec4f {
+  let t = U.texel.xy;
+  let uv = in.uv;
+  let a = tap(uv + t * vec2f(-2.0, -2.0));
+  let b = tap(uv + t * vec2f(0.0, -2.0));
+  let c = tap(uv + t * vec2f(2.0, -2.0));
+  let d = tap(uv + t * vec2f(-2.0, 0.0));
+  let e = tap(uv);
+  let f = tap(uv + t * vec2f(2.0, 0.0));
+  let g = tap(uv + t * vec2f(-2.0, 2.0));
+  let h = tap(uv + t * vec2f(0.0, 2.0));
+  let i = tap(uv + t * vec2f(2.0, 2.0));
+  let j = tap(uv + t * vec2f(-1.0, -1.0));
+  let k = tap(uv + t * vec2f(1.0, -1.0));
+  let l = tap(uv + t * vec2f(-1.0, 1.0));
+  let m = tap(uv + t * vec2f(1.0, 1.0));
+  var o: vec3f;
+  if (U.texel.z > 0.5) {
+    // Karis average on the first downsample to tame fireflies from sun glints
+    let g0 = (a + b + d + e) * 0.25;
+    let g1 = (b + c + e + f) * 0.25;
+    let g2 = (d + e + g + h) * 0.25;
+    let g3 = (e + f + h + i) * 0.25;
+    let g4 = (j + k + l + m) * 0.25;
+    let w0 = karis(g0) * 0.125; let w1 = karis(g1) * 0.125; let w2 = karis(g2) * 0.125;
+    let w3 = karis(g3) * 0.125; let w4 = karis(g4) * 0.5;
+    o = (g0 * w0 + g1 * w1 + g2 * w2 + g3 * w3 + g4 * w4) / (w0 + w1 + w2 + w3 + w4);
+  } else {
+    o = e * 0.125 + (a + c + g + i) * 0.03125 + (b + d + f + h) * 0.0625 + (j + k + l + m) * 0.125;
+  }
+  return vec4f(min(o, vec3f(6.0e4)), 1.0);
+}
+`;
+
+const BLOOM_UP = FS_TRI + /* wgsl */ `
+struct P { texel: vec4f };   // xy = 1/src size, z = radius, w = weight
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var<uniform> U: P;
+fn tap(uv: vec2f) -> vec3f { return textureSampleLevel(src, samp, uv, 0.0).rgb; }
+@fragment fn fs(in: VO) -> @location(0) vec4f {
+  let t = U.texel.xy * U.texel.z;
+  let uv = in.uv;
+  var o = tap(uv) * 4.0;
+  o += (tap(uv + vec2f(-t.x, 0.0)) + tap(uv + vec2f(t.x, 0.0)) + tap(uv + vec2f(0.0, -t.y)) + tap(uv + vec2f(0.0, t.y))) * 2.0;
+  o += tap(uv + vec2f(-t.x, -t.y)) + tap(uv + vec2f(t.x, -t.y)) + tap(uv + vec2f(-t.x, t.y)) + tap(uv + vec2f(t.x, t.y));
+  return vec4f(o * (U.texel.w / 16.0), 1.0);
+}
+`;
+
+const COMPOSITE = FS_TRI + /* wgsl */ `
+struct P { p: vec4f, q: vec4f };  // p: exposure, bloom, frame, vignette; q: saturation, contrast, warmth, grain
+@group(0) @binding(0) var hdr: texture_2d<f32>;
+@group(0) @binding(1) var bloom: texture_2d<f32>;
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var<uniform> U: P;
+
+fn agxContrast(x: vec3f) -> vec3f {
+  let x2 = x * x;
+  let x4 = x2 * x2;
+  return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+fn agx(v: vec3f) -> vec3f {
+  let m = mat3x3f(0.842479062253094, 0.0423282422610123, 0.0423756549057051,
+                  0.0784335999999992, 0.878468636469772, 0.0784336,
+                  0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+  let minEv = -12.47393;
+  let maxEv = 4.026069;
+  var x = m * max(v, vec3f(1e-10));
+  x = clamp(log2(x), vec3f(minEv), vec3f(maxEv));
+  x = (x - minEv) / (maxEv - minEv);
+  return agxContrast(x);
+}
+fn agxEotf(v: vec3f) -> vec3f {
+  let mi = mat3x3f(1.19687900512017, -0.0528968517574562, -0.0529716355144438,
+                   -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
+                   -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
+  return mi * v;
+}
+fn agxLook(v: vec3f, sat: f32, power: f32) -> vec3f {
+  let l = dot(v, vec3f(0.2126, 0.7152, 0.0722));
+  let p = pow(max(v, vec3f(0.0)), vec3f(power));
+  return l + sat * (p - l);
+}
+fn ign(p: vec2f) -> f32 { return fract(52.9829189 * fract(dot(p, vec2f(0.06711056, 0.00583715)))); }
+
+@fragment fn fs(in: VO) -> @location(0) vec4f {
+  let dims = vec2f(textureDimensions(hdr));
+  let pc = vec2i(in.pos.xy);
+  var c = textureLoad(hdr, pc, 0).rgb;
+  // the up-chain accumulates 8 blur levels
+  let b = textureSampleLevel(bloom, samp, in.uv, 0.0).rgb * (1.0 / 8.0);
+  c = mix(c, b, U.p.y);
+  c *= U.p.x;
+  // subtle vignette
+  let d = (in.uv - 0.5) * vec2f(dims.x / dims.y, 1.0);
+  c *= 1.0 - U.p.w * dot(d, d);
+  c *= vec3f(1.0 + U.q.z, 1.0, 1.0 - U.q.z);
+  // film/sensor-like highlight desaturation: very bright glints and the sun go towards white
+  let lum = dot(c, vec3f(0.2126, 0.7152, 0.0722));
+  c = mix(c, vec3f(lum), smoothstep(0.7, 6.0, lum) * 0.55);
+  var o = agx(c);
+  o = agxLook(o, U.q.x, U.q.y);
+  o = agxEotf(o);
+  // triangular dither against banding in the sky gradients
+  let n = ign(in.pos.xy + U.p.z * 5.588238) + ign(in.pos.xy * 1.37 + 17.0 + U.p.z * 3.1) - 1.0;
+  o += n / 255.0;
+  return vec4f(clamp(o, vec3f(0.0), vec3f(1.0)), 1.0);
+}
+`;
+
+// ---- js/main.js ----
+// WebGPU ocean — custom renderer.
+// FFT ocean (5 cascades) + CDLOD surface mesh + physically based sky + HDR post.
+// All per-frame data lives in preallocated typed arrays / descriptors (no per-frame garbage
+// apart from the unavoidable swap-chain view and command buffer objects).
+
+
+
+
+
+const qs = new URLSearchParams(location.search);
+const DBG = Number(qs.get('dbg')) || 0;
+const D2R = Math.PI / 180;
+const GU = globalThis.GPUBufferUsage;
+const TU = globalThis.GPUTextureUsage;
+const sliderRefs = Object.create(null);
+function syncSliderValue(key, value) {
+  const ref = sliderRefs[key];
+  if (!ref) return;
+  ref.input.value = value;
+  ref.output.textContent = Number(value).toFixed(ref.step < 1 ? 1 : 0);
+}
+
+// ----------------------------------------------------------------------------------------
+// Tunable parameters (UI panel edits these)
+// ----------------------------------------------------------------------------------------
+const P = {
+  windSpeed: 2.5, windDir: 96, fetchKm: 5, windHs: 0.045, windLength: 2.6, motion: 0.85,
+  swellHs: 0.12, swellDir: 92, swellLength: 8.0, swellSpread: 24,
+  choppy: 0.12, turbidity: 0.9, foam: 0.22,
+  sunElev: 2.8, sunAzim: Math.atan(0.60 * (innerWidth / innerHeight) * Math.tan(29 * D2R)) / D2R, exposure: 0.70,
+  haze: 1.1, clouds: 1.0, veil: 0.0, bloom: 0.018,
+  cloudDensity:0.52, cloudCoverage:0.46, cloudOptical:0.64,
+
+};
+const SUNSET = { startElev: 2.8, endElev: -0.85, duration: 6 * 60, elapsed: 0, active: true, done: false };
+const CASC_L = [1103.0, 211.3, 39.7, 7.43, 1.393, 0.2617];
+
+function fail(msg) {
+  const el = document.getElementById('err');
+  el.style.display = 'block';
+  el.textContent = msg;
+  log('FATAL ' + msg);
+  throw new Error(msg);
+}
+function log(msg) {
+  console.log(msg);
+  try { fetch('/__log', { method: 'POST', body: String(msg) }).catch(() => {}); } catch (e) { /* offline */ }
+}
+
+// ----------------------------------------------------------------------------------------
+// Small math helpers writing into preallocated arrays
+// ----------------------------------------------------------------------------------------
+function mat4Mul(out, a, b) {
+  for (let c = 0; c < 4; c++) {
+    const b0 = b[c * 4], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+    out[c * 4] = a[0] * b0 + a[4] * b1 + a[8] * b2 + a[12] * b3;
+    out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9] * b2 + a[13] * b3;
+    out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+    out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+  }
+}
+
+async function main() {
+  if (!navigator.gpu) fail('WebGPU is not available in this browser.');
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+  if (!adapter) fail('No WebGPU adapter found.');
+  const hasTS = adapter.features.has('timestamp-query');
+  const device = await adapter.requestDevice({
+    requiredFeatures: hasTS ? ['timestamp-query'] : [],
+  });
+  device.lost.then((i) => { document.getElementById('err').style.display = 'block'; document.getElementById('err').textContent = 'Graphics device lost. Reload to resume. ' + i.message; });
+  // Preserve the first/root validation error. Subsequent command-buffer errors
+  // are usually consequences; never overwrite the primary diagnostic.
+  let gpuFaulted = false;
+  let primaryGPUError = null;
+  const secondaryGPUErrors = [];
+  function recordGPUError(message, origin='uncaptured') {
+    const msg = String(message || 'Unknown GPU validation error');
+    const generic = /Invalid CommandBuffer.*previous error|is invalid due to a previous error/i.test(msg);
+    if(!primaryGPUError || (generic === false && /Invalid CommandBuffer.*previous error|is invalid due to a previous error/i.test(primaryGPUError))){
+      if(primaryGPUError) secondaryGPUErrors.unshift(primaryGPUError);
+      primaryGPUError = msg;
+    } else {
+      secondaryGPUErrors.push(msg);
+    }
+    gpuFaulted = true;
+    const panel=document.getElementById('gpu-diag');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.textContent = 'FIRST GPU ERROR ('+origin+'):\n'+primaryGPUError+
+        (secondaryGPUErrors.length ? '\n\nSubsequent errors ('+secondaryGPUErrors.length+'):\n'+secondaryGPUErrors.slice(0,3).join('\n---\n') : '');
+    }
+    log('GPU error ('+origin+'): '+msg);
+  }
+  device.onuncapturederror = (e) => recordGPUError(e.error?.message, 'uncaptured');
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('webgpu');
+  const swapFormat = navigator.gpu.getPreferredCanvasFormat();
+  ctx.configure({ device, format: swapFormat, alphaMode: 'opaque', usage: TU.RENDER_ATTACHMENT | TU.COPY_SRC });
+
+  async function shader(code, label) {
+    const m = device.createShaderModule({ code, label });
+    const info = await m.getCompilationInfo();
+    let bad = false;
+    for (const msg of info.messages) {
+      if (msg.type === 'error') bad = true;
+      if (msg.type !== 'info') {
+        const line = code.split('\n')[msg.lineNum - 1];
+        log(`[${label}] ${msg.type} ${msg.lineNum}:${msg.linePos} ${msg.message}\n    ${line}`);
+      }
+    }
+    if (bad) {
+      let details=info.messages.filter(m=>m.type==='error').slice(0,5).map(m=>`${m.lineNum}:${m.linePos} ${m.message}`).join('\n');
+      fail('Shader compile error in '+label+'\n'+details);
+    }
+    return m;
+  }
+  async function computePipe(code, label) {
+    const module = await shader(code, label);
+    return device.createComputePipelineAsync({ label, layout: 'auto', compute: { module, entryPoint: 'main' } });
+  }
+
+  // --------------------------------------------------------------------------------------
+  // Simulation resources
+  // --------------------------------------------------------------------------------------
+  const C = CASCADES;
+  const SIM_MIP_COUNT = Math.log2(N) + 1;
+  const specBytes = N * N * C * 16;
+  const mkBuf = (size, usage, label) => device.createBuffer({ size, usage, label });
+  const simUBO = mkBuf(224, GU.UNIFORM | GU.COPY_DST, 'sim ubo');
+  const h0Buf = mkBuf(specBytes, GU.STORAGE, 'h0');
+  const specA = mkBuf(specBytes, GU.STORAGE, 'specA');
+  const specB = mkBuf(specBytes, GU.STORAGE, 'specB');
+  const tmpA = mkBuf(specBytes, GU.STORAGE, 'tmpA');
+  const tmpB = mkBuf(specBytes, GU.STORAGE, 'tmpB');
+
+  const mkSimTex = (label) => device.createTexture({
+    label, size: [N, N, C], format: 'rgba16float', mipLevelCount: SIM_MIP_COUNT,
+    usage: TU.TEXTURE_BINDING | TU.STORAGE_BINDING,
+  });
+  const dispTex = mkSimTex('disp');
+  const derivTex = mkSimTex('deriv');
+  const momTex = mkSimTex('moments');
+  const lvl = (t, m, dim = '2d-array') => t.createView({ dimension: dim, baseMipLevel: m, mipLevelCount: 1 });
+  const fullArr = (t) => t.createView({ dimension: '2d-array' });
+
+  const [initPipe, evolvePipe, rowsPipe, colsPipe, simMipPipe, foamGenPipe, rgba8MipPipe,
+    transPipe, msPipe, skyViewPipe, envPipe, cubeMipPipe, foamUpdPipe, arr16MipPipe, sunVisPipe] = await Promise.all([
+    computePipe(SIM_INIT, 'sim init'),
+    computePipe(SIM_EVOLVE, 'sim evolve'),
+    computePipe(FFT_ROWS, 'fft rows'),
+    computePipe(FFT_COLS, 'fft cols'),
+    computePipe(SIM_MIPS, 'sim mips'),
+    computePipe(FOAM_TEX, 'foam tex'),
+    computePipe(RGBA8_MIPS, 'rgba8 mips'),
+    computePipe(TRANS_LUT, 'transmittance'),
+    computePipe(MS_LUT, 'multiscatter'),
+    computePipe(SKYVIEW_LUT, 'skyview'),
+    computePipe(ENV_CUBE, 'env cube'),
+    computePipe(CUBE_MIPS, 'cube mips'),
+    computePipe(FOAM_UPDATE, 'foam update'),
+    computePipe(ARRAY16_MIPS, 'array16 mips'),
+    computePipe(SUN_VIS, 'sun visibility'),
+  ]);
+
+  const bg = (pipe, entries, label) => device.createBindGroup({
+    label, layout: pipe.getBindGroupLayout(0),
+    entries: entries.map((r, i) => ({ binding: i, resource: r })),
+  });
+  const bgInit = bg(initPipe, [{ buffer: simUBO }, { buffer: h0Buf }], 'init');
+  const bgEvolve = bg(evolvePipe, [{ buffer: simUBO }, { buffer: h0Buf }, { buffer: specA }, { buffer: specB }], 'evolve');
+  const bgRows = bg(rowsPipe, [{ buffer: specA }, { buffer: specB }, { buffer: tmpA }, { buffer: tmpB }], 'rows');
+  const bgCols = bg(colsPipe, [{ buffer: tmpA }, { buffer: tmpB },
+    lvl(dispTex, 0), lvl(derivTex, 0), lvl(momTex, 0)], 'cols');
+  const bgSimMips = [];
+  for (let m = 1; m < SIM_MIP_COUNT; m++) {
+    bgSimMips.push(bg(simMipPipe, [lvl(dispTex, m - 1), lvl(derivTex, m - 1), lvl(momTex, m - 1),
+      lvl(dispTex, m), lvl(derivTex, m), lvl(momTex, m)], 'simmip' + m));
+  }
+
+  // Foam micro-structure texture (generated once)
+  const FOAM_SIZE = 512, FOAM_MIPS = 10;
+  const foamTex = device.createTexture({
+    label: 'foam detail', size: [FOAM_SIZE, FOAM_SIZE], format: 'rgba8unorm', mipLevelCount: FOAM_MIPS,
+    usage: TU.TEXTURE_BINDING | TU.STORAGE_BINDING,
+  });
+  {
+    // This is one-time foam initialization, before frameIndex exists.
+    // Check it separately so an initial GPU failure cannot be hidden by later
+    // [Invalid CommandBuffer] messages.
+    device.pushErrorScope('validation');
+    const enc = device.createCommandEncoder({ label:'Kite Beach foam initialization' });
+    const cp = enc.beginComputePass();
+    cp.setPipeline(foamGenPipe);
+    cp.setBindGroup(0, bg(foamGenPipe, [lvl(foamTex, 0, '2d')]));
+    cp.dispatchWorkgroups(FOAM_SIZE / 8, FOAM_SIZE / 8);
+    cp.setPipeline(rgba8MipPipe);
+    for (let m = 1; m < FOAM_MIPS; m++) {
+      const s = FOAM_SIZE >> m;
+      cp.setBindGroup(0, bg(rgba8MipPipe, [lvl(foamTex, m - 1, '2d'), lvl(foamTex, m, '2d')]));
+      cp.dispatchWorkgroups(Math.ceil(s / 8), Math.ceil(s / 8));
+    }
+    cp.end();
+    device.queue.submit([enc.finish()]);
+    const foamInitError = await device.popErrorScope();
+    if (foamInitError) {
+      recordGPUError(foamInitError.message, 'foam initialization');
+      fail('GPU validation error during foam initialization: ' + foamInitError.message);
+    }
+  }
+
+  // World-space foam clipmaps (ping-pong)
+  const FOAM_LEVEL_SIZE = [128.0, 1024.0];
+  const FOAMW_MIPS = Math.log2(FOAM_RES) + 1;
+  const foamW = [0, 1].map((i) => device.createTexture({
+    label: 'foam world ' + i, size: [FOAM_RES, FOAM_RES, 2], format: 'rgba16float', mipLevelCount: FOAMW_MIPS,
+    usage: TU.TEXTURE_BINDING | TU.STORAGE_BINDING,
+  }));
+  const foamUBO = mkBuf(144, GU.UNIFORM | GU.COPY_DST, 'foam ubo');
+  const foamUArr = new ArrayBuffer(144);
+  const foamUI = new Int32Array(foamUArr);
+  const foamUF = new Float32Array(foamUArr);
+  const foamSnap = new Int32Array(4);  // previous camera texel per level
+  let foamFirst = true;
+  let foamCur = 0;
+  const samplerSim = device.createSampler({
+    magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat',
+  });
+  const bgFoamUpd = [0, 1].map((i) => bg(foamUpdPipe, [{ buffer: foamUBO }, lvl(foamW[1 - i], 0), lvl(foamW[i], 0),
+    fullArr(dispTex), fullArr(derivTex), samplerSim, samplerSim], 'foamupd' + i));
+  const bgFoamMips = [0, 1].map((i) => {
+    const out = [];
+    for (let m = 1; m < FOAMW_MIPS; m++) out.push(bg(arr16MipPipe, [lvl(foamW[i], m - 1), lvl(foamW[i], m)]));
+    return out;
+  });
+
+  // --------------------------------------------------------------------------------------
+  // Atmosphere resources
+  // --------------------------------------------------------------------------------------
+  const atmoUBO = mkBuf(16, GU.UNIFORM | GU.COPY_DST, 'atmo ubo');
+  const mkLut = (w, h, label) => device.createTexture({
+    label, size: [w, h], format: 'rgba16float', usage: TU.TEXTURE_BINDING | TU.STORAGE_BINDING,
+  });
+  const transLUT = mkLut(256, 64, 'transmittance');
+  const msLUT = mkLut(32, 32, 'multiscatter');
+  const skyLUT = mkLut(SKY_W, SKY_H, 'skyview');
+  const envTex = device.createTexture({
+    label: 'env cube', size: [ENV_SIZE, ENV_SIZE, 6], format: 'rgba16float', mipLevelCount: ENV_MIPS,
+    usage: TU.TEXTURE_BINDING | TU.STORAGE_BINDING,
+  });
+  const envCubeView = envTex.createView({ dimension: 'cube' });
+  const sampClamp = device.createSampler({
+    magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear',
+    addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge',
+  });
+  const sampRepeat = device.createSampler({
+    magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear',
+    addressModeU: 'repeat', addressModeV: 'repeat', maxAnisotropy: 16,
+  });
+  const frameUBO = mkBuf(384, GU.UNIFORM | GU.COPY_DST, 'frame ubo');
+  const sunVisBuf = mkBuf(16, GU.STORAGE, 'sun visibility');
+  const transView = transLUT.createView();
+  const msView = msLUT.createView();
+  const skyView = skyLUT.createView();
+
+  // jeantimex volumetric cloud density cache, evaluated in the SAME WebGPU device.
+  const cloudResolution = 40;
+  const cloudTexture=device.createTexture({
+    label:'3D volumetric clouds', dimension:'3d', size:[cloudResolution,cloudResolution,cloudResolution],
+    format:'rgba16float',usage:TU.STORAGE_BINDING|TU.TEXTURE_BINDING
+  });
+  const cloudView=cloudTexture.createView({dimension:'3d'});
+  const cloudSampler=device.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge',addressModeW:'clamp-to-edge'});
+  const cloudParamsUBO=mkBuf(96,GU.UNIFORM|GU.COPY_DST,'cloud density params');
+  const cloudData=new Float32Array(24);
+  const cloudPipeline=await computePipe(CLOUD_CACHE_SHADER,'volumetric cloud density cache');
+  const bgCloud=bg(cloudPipeline,[{buffer:cloudParamsUBO},cloudView],'cloud cache');
+  function writeCloudParams(t) {
+    cloudData[0]=t;cloudData[1]=t;cloudData[2]=t;cloudData[3]=P.cloudDensity;
+    cloudData[4]=0.2;cloudData[5]=0.56;cloudData[6]=P.cloudCoverage;cloudData[7]=1.0;
+    cloudData[8]=1.0;cloudData[9]=4.25;cloudData[10]=4.25;cloudData[11]=4.25;
+    cloudData[12]=4.25;cloudData[13]=0.92;cloudData[14]=24;cloudData[15]=0;
+    cloudData[16]=0;cloudData[17]=4;cloudData[18]=3.3;cloudData[19]=7.0;
+    cloudData[20]=3.1;cloudData[21]=1.0;cloudData[22]=0;cloudData[23]=0;
+    device.queue.writeBuffer(cloudParamsUBO,0,cloudData);
+  }
+  // Refresh slowly because cloud drift is 0.009; the wave FFT runs every frame.
+  let lastCloudRefresh=-10000;
+  // Each opening begins at a different position in the volumetric density field.
+  // Only the initial phase changes: drift still advances by dt*0.009.
+  let cloudClock=20 + Math.random()*500;
+  addEventListener('cloudReseed',()=>{
+    // Ensure a visibly different arrangement, even if the two random draws are close.
+    cloudClock += 45 + Math.random()*320;
+    lastCloudRefresh=-10000; // rebuild 3D cache on the very next frame
+    envFull=2;               // refresh reflected sky / sun visibility
+  });
+  addEventListener('cloudParameter',e=>{
+    const {key,value}=e.detail;
+    if(Object.prototype.hasOwnProperty.call(P,key)){
+      P[key]=value;
+      if(key==='cloudDensity'||key==='cloudCoverage')lastCloudRefresh=-10000;
+      envFull=2;
+    }
+  });
+
+  const bgTrans = bg(transPipe, [{ buffer: atmoUBO }, transView], 'trans');
+  const bgMS = bg(msPipe, [{ buffer: atmoUBO }, transView, sampClamp, msView], 'ms');
+  const bgSkyView = bg(skyViewPipe, [{ buffer: frameUBO }, transView, msView, sampClamp, skyView], 'skyview');
+  const bgEnv = bg(envPipe, [{ buffer: frameUBO }, transView, skyView, sampClamp, lvl(envTex, 0),cloudView,cloudSampler], 'env');
+  const bgSunVis = bg(sunVisPipe, [{ buffer: frameUBO }, transView, skyView, sampClamp, { buffer: sunVisBuf },cloudView,cloudSampler], 'sunvis');
+  const bgCubeMips = [];
+  for (let m = 1; m < ENV_MIPS; m++) bgCubeMips.push(bg(cubeMipPipe, [lvl(envTex, m - 1), lvl(envTex, m)], 'cubemip' + m));
+
+  // --------------------------------------------------------------------------------------
+  // Render pipelines
+  // --------------------------------------------------------------------------------------
+  const MSAA = 4;
+  const HDR = 'rgba16float';
+  const [oceanMod, skyMod, downMod, upMod, compMod] = await Promise.all([
+    shader(OCEAN, 'ocean'), shader(SKY_BG, 'sky'), shader(BLOOM_DOWN, 'bloom down'),
+    shader(BLOOM_UP, 'bloom up'), shader(COMPOSITE, 'composite'),
+  ]);
+  const oceanPipe = await device.createRenderPipelineAsync({
+    label: 'ocean', layout: 'auto',
+    vertex: {
+      module: oceanMod, entryPoint: 'vs',
+      buffers: [{ arrayStride: 16, stepMode: 'instance', attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x4' }] }],
+    },
+    fragment: { module: oceanMod, entryPoint: 'fs', targets: [{ format: HDR }] },
+    primitive: { topology: 'triangle-list', cullMode: 'none' },
+    depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'greater' },
+    multisample: { count: MSAA },
+  });
+  const skyPipe = await device.createRenderPipelineAsync({
+    label: 'sky', layout: 'auto',
+    vertex: { module: skyMod, entryPoint: 'vs' },
+    fragment: { module: skyMod, entryPoint: 'fs', targets: [{ format: HDR }] },
+    primitive: { topology: 'triangle-list' },
+    depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'equal' },
+    multisample: { count: MSAA },
+  });
+  // World-space beach and detached low rock strip. Shared depth buffer means
+  // waves can occlude the shoreline naturally; these are not screen overlays.
+  const landMod = await shader(FRAME_WGSL + `
+@group(0) @binding(0) var<uniform> F: Frame;
+struct LandOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) color: vec3f };
+@vertex fn vs(@location(0) p: vec3f, @location(1) color: vec3f, @location(2) boat: f32) -> LandOut {
+  var o: LandOut;
+  var world = p;
+  if (boat > 0.5) {
+    // Sailboat traverses the entire field of view, then wraps ONLY while off-screen.
+    // Phase is offset so the boat is initially visible even on a portrait display.
+    // 300-second period divides the water simulation's 600-second seamless time loop.
+    let aspect = F.screen.x / F.screen.y;
+    let viewHalf = 260.0 * 0.55430905 * aspect;
+    let phase = fract(F.camPos.w / 300.0 + 0.18);
+    world.x += mix(-1.32 * viewHalf, 1.32 * viewHalf, phase);
+    world += vec3f(0.0, 0.045*sin(F.camPos.w*0.7) + 0.018*sin(F.camPos.w*1.9), 0.0);
+  }
+  o.pos = F.viewProj * vec4f(world - F.camPos.xyz, 1.0);
+  o.world = world;
+  o.color = color;
+  return o;
+}
+@fragment fn fs(i: LandOut) -> @location(0) vec4f {
+  let grain = 0.5 + 0.5 * sin(i.world.x * 31.7 + sin(i.world.z * 18.3));
+  let c = i.color * (0.85 + 0.15 * grain);
+  return vec4f(c, 1.0);
+}`, 'beach and breakwater');
+  const landPipe = await device.createRenderPipelineAsync({
+    label:'land',layout:'auto',
+    vertex:{module:landMod,entryPoint:'vs',buffers:[{arrayStride:28,attributes:[{shaderLocation:0,offset:0,format:'float32x3'},{shaderLocation:1,offset:12,format:'float32x3'},{shaderLocation:2,offset:24,format:'float32'}]}]},
+    fragment:{module:landMod,entryPoint:'fs',targets:[{format:HDR}]},
+    primitive:{topology:'triangle-list',cullMode:'none'},
+    depthStencil:{format:'depth32float',depthWriteEnabled:true,depthCompare:'greater'},
+    multisample:{count:MSAA}
+  });
+  const landBG = bg(landPipe,[{buffer:frameUBO}],'land');
+  const landVertices=[];
+  const triangle=(a,b,c,color=[0.0045,0.0025,0.0018],boat=0)=>{
+    for(const p of [a,b,c]) landVertices.push(...p,...color,boat);
+  };
+  const quad=(a,b,c,d)=>{triangle(a,b,c);triangle(a,c,d);};
+  function beachEdge(x){return -6.0 + 0.025*x + 0.12*Math.sin(x*0.8)+0.06*Math.sin(x*2.1);}
+  // Sloping beach continuing underneath the water, not a vertical curtain.
+  for(let x=-250;x<250;x+=0.5){
+    const x1=x+0.5, z=beachEdge(x), z1=beachEdge(x1);
+    quad([x,-0.30,z-2],[x1,-0.30,z1-2],[x1,0.10,z1],[x,0.10,z]);
+    quad([x,0.10,z],[x1,0.10,z1],[x1,0.75,25],[x,0.75,25]);
+  }
+  // Composition based on the supplied photo; dimensions are illustrative.
+  const halfView = 100 * Math.tan(29*D2R) * innerWidth/innerHeight;
+  function rockStrip(left,right,z){
+    const n=160;
+    for(let i=0;i<n;i++){
+      const section=j=>{
+        const u=j/n, x=left+(right-left)*u;
+        const taper=Math.pow(Math.max(0,Math.sin(Math.PI*u)),0.18);
+        const h=taper*(0.90+0.10*Math.sin(j*1.7)+0.06*Math.sin(j*4.1));
+        return {x,h,w:2.1*taper,zz:z+0.20*Math.sin(j*0.8)};
+      };
+      const a=section(i),b=section(i+1);
+      quad([a.x,-0.3,a.zz+a.w],[b.x,-0.3,b.zz+b.w],[b.x,b.h,b.zz],[a.x,a.h,a.zz]);
+      quad([a.x,a.h,a.zz],[b.x,b.h,b.zz],[b.x,-0.3,b.zz-b.w],[a.x,-0.3,a.zz-a.w]);
+    }
+  }
+  rockStrip(-0.04*halfView,0.86*halfView,-100);
+  rockStrip(-2*halfView,-0.97*halfView,-100);
+  // Distant sailboat slowly traversing; geometry centered and translated in shader.
+  const boatZ=-260;
+  const boatPoint=(x,y,z=0)=>[x,y,boatZ+z];
+  const sailTri=(a,b,c,color)=>triangle(boatPoint(...a),boatPoint(...b),boatPoint(...c),color,1);
+  const hull=[0.012,0.009,0.007], sail=[0.16,0.115,0.067], shade=[0.075,0.054,0.034];
+  // Hull, slender mast, two subtly differently lit triangular sails.
+  sailTri([-3.1,0.48],[3.1,0.48],[2.0,0.08],hull);
+  sailTri([-3.1,0.48],[2.0,0.08],[-2.3,0.08],hull);
+  sailTri([-0.05,0.4],[0.05,0.4],[0.05,8.0],hull);
+  sailTri([-0.05,0.4],[0.05,8.0],[-0.05,8.0],hull);
+  sailTri([-0.12,7.8],[-0.12,1.0],[-2.8,1.0],shade);
+  sailTri([0.12,7.25],[2.65,1.0],[0.12,1.0],sail);
+  const landData=new Float32Array(landVertices);
+  const landBuffer=mkBuf(landData.byteLength,GU.VERTEX|GU.COPY_DST,'land geometry');
+  device.queue.writeBuffer(landBuffer,0,landData);
+
+  const downPipe = await device.createRenderPipelineAsync({
+    label: 'bloom down', layout: 'auto',
+    vertex: { module: downMod, entryPoint: 'vs' },
+    fragment: { module: downMod, entryPoint: 'fs', targets: [{ format: HDR }] },
+  });
+  const upPipe = await device.createRenderPipelineAsync({
+    label: 'bloom up', layout: 'auto',
+    vertex: { module: upMod, entryPoint: 'vs' },
+    fragment: {
+      module: upMod, entryPoint: 'fs',
+      targets: [{ format: HDR, blend: { color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' } } }],
+    },
+  });
+  const compPipe = await device.createRenderPipelineAsync({
+    label: 'composite', layout: 'auto',
+    vertex: { module: compMod, entryPoint: 'vs' },
+    fragment: { module: compMod, entryPoint: 'fs', targets: [{ format: swapFormat }] },
+  });
+
+  const bgOcean = [0, 1].map((i) => bg(oceanPipe, [{ buffer: frameUBO }, transView, skyView, sampClamp,
+    fullArr(dispTex), fullArr(derivTex), fullArr(momTex), foamTex.createView(), envCubeView, sampRepeat,
+    fullArr(foamW[i]), { buffer: sunVisBuf }], 'ocean' + i));
+  const bgSky = bg(skyPipe, [{ buffer: frameUBO }, transView, skyView, sampClamp,cloudView,cloudSampler], 'sky');
+
+  // Water height under the camera (async readback, a few frames of latency) so the
+  // floating camera rides above passing crests instead of clipping into them.
+  const probePipe = await computePipe(HEIGHT_PROBE, 'height probe');
+  const probeOut = mkBuf(16, GU.STORAGE | GU.COPY_SRC, 'probe out');
+  const probeRead = mkBuf(16, GU.MAP_READ | GU.COPY_DST, 'probe read');
+  const bgProbe = bg(probePipe, [{ buffer: frameUBO }, fullArr(dispTex), samplerSim, { buffer: probeOut }], 'probe');
+  let probePending = false, waterH = 0;
+  const onProbe = () => {
+    waterH = new Float32Array(probeRead.getMappedRange(0, 16))[0];
+    probeRead.unmap();
+    probePending = false;
+  };
+  const onProbeFail = () => { probePending = false; };
+
+  // CDLOD grid mesh
+  const GRID = 32;
+  const LEAF = 2.0;           // finest node size (m) -> 6.25 cm vertex spacing
+  const R0 = 8 * LEAF;        // LOD 0 range
+  const LODS = 17;
+  const MAX_DIST = 160000;
+  const MAX_NODES = 8192;
+  const idx = new Uint16Array(GRID * GRID * 6);
+  {
+    let k = 0;
+    for (let j = 0; j < GRID; j++) {
+      for (let i = 0; i < GRID; i++) {
+        const a = i + j * (GRID + 1), b = a + 1, c = a + GRID + 1, d = c + 1;
+        idx[k++] = a; idx[k++] = c; idx[k++] = d;
+        idx[k++] = a; idx[k++] = d; idx[k++] = b;
+      }
+    }
+  }
+  const idxBuf = mkBuf(idx.byteLength, GU.INDEX | GU.COPY_DST, 'grid idx');
+  device.queue.writeBuffer(idxBuf, 0, idx);
+  const instData = new Float32Array(MAX_NODES * 4);
+  const instBuf = mkBuf(instData.byteLength, GU.VERTEX | GU.COPY_DST, 'instances');
+
+  // --------------------------------------------------------------------------------------
+  // Screen-size dependent targets
+  // --------------------------------------------------------------------------------------
+  const BLOOM_LEVELS = 8;
+  const linSamp = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+  const compUBO = mkBuf(32, GU.UNIFORM | GU.COPY_DST, 'composite ubo');
+  const compData = new Float32Array(8);
+  const bloomUBOs = [];
+  for (let i = 0; i < BLOOM_LEVELS * 2; i++) bloomUBOs.push(mkBuf(16, GU.UNIFORM | GU.COPY_DST, 'bloom ubo'));
+
+  let W = 0, H = 0;
+  let colorMS, depthMS, hdrTex, bloomTex;
+  const mainPass = {
+    colorAttachments: [{ view: null, resolveTarget: null, clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'discard' }],
+    depthStencilAttachment: { view: null, depthClearValue: 0, depthLoadOp: 'clear', depthStoreOp: 'discard' },
+  };
+  const compPass = {
+    colorAttachments: [{ view: null, clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }],
+    timestampWrites: undefined,
+  };
+  let downPasses = [], upPasses = [], downBGs = [], upBGs = [], bgComp = null;
+
+  function resize() {
+    const fw = Number(qs.get('w')) || 0, fh = Number(qs.get('h')) || 0;
+    // Limit fill rate on high-DPI phones; preserve desktop detail.
+    const mobile = matchMedia('(pointer: coarse)').matches;
+    const pixelBudget = mobile ? 1000000 : 2400000;
+    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75,
+      Math.sqrt(pixelBudget / Math.max(1, canvas.clientWidth * canvas.clientHeight)));
+    const w = fw || Math.max(1, Math.round(canvas.clientWidth * dpr));
+    const h = fh || Math.max(1, Math.round(canvas.clientHeight * dpr));
+    if (w === W && h === H) return;
+    W = w; H = h;
+    canvas.width = W; canvas.height = H;
+    for (const t of [colorMS, depthMS, hdrTex, bloomTex]) t && t.destroy();
+    colorMS = device.createTexture({ size: [W, H], format: HDR, sampleCount: MSAA, usage: TU.RENDER_ATTACHMENT });
+    depthMS = device.createTexture({ size: [W, H], format: 'depth32float', sampleCount: MSAA, usage: TU.RENDER_ATTACHMENT });
+    hdrTex = device.createTexture({ size: [W, H], format: HDR, usage: TU.RENDER_ATTACHMENT | TU.TEXTURE_BINDING });
+    const bw = Math.max(1, W >> 1), bh = Math.max(1, H >> 1);
+    bloomTex = device.createTexture({ size: [bw, bh], format: HDR, mipLevelCount: BLOOM_LEVELS, usage: TU.RENDER_ATTACHMENT | TU.TEXTURE_BINDING });
+    mainPass.colorAttachments[0].view = colorMS.createView();
+    mainPass.colorAttachments[0].resolveTarget = hdrTex.createView();
+    mainPass.depthStencilAttachment.view = depthMS.createView();
+    const hdrView = hdrTex.createView();
+    const bv = [];
+    for (let m = 0; m < BLOOM_LEVELS; m++) bv.push(bloomTex.createView({ baseMipLevel: m, mipLevelCount: 1 }));
+    downPasses = []; upPasses = []; downBGs = []; upBGs = [];
+    const tmp = new Float32Array(4);
+    for (let m = 0; m < BLOOM_LEVELS; m++) {
+      const srcW = m === 0 ? W : Math.max(1, bw >> (m - 1));
+      const srcH = m === 0 ? H : Math.max(1, bh >> (m - 1));
+      tmp[0] = 1 / srcW; tmp[1] = 1 / srcH; tmp[2] = m === 0 ? 1 : 0; tmp[3] = 0;
+      device.queue.writeBuffer(bloomUBOs[m], 0, tmp);
+      downBGs.push(bg(downPipe, [m === 0 ? hdrView : bv[m - 1], linSamp, { buffer: bloomUBOs[m] }]));
+      downPasses.push({ colorAttachments: [{ view: bv[m], clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
+    }
+    for (let m = BLOOM_LEVELS - 1; m > 0; m--) {
+      const sw = Math.max(1, bw >> m), sh = Math.max(1, bh >> m);
+      tmp[0] = 1 / sw; tmp[1] = 1 / sh; tmp[2] = 1.0; tmp[3] = 1.0;
+      const ubo = bloomUBOs[BLOOM_LEVELS + m];
+      device.queue.writeBuffer(ubo, 0, tmp);
+      upBGs.push(bg(upPipe, [bv[m], linSamp, { buffer: ubo }]));
+      upPasses.push({ colorAttachments: [{ view: bv[m - 1], loadOp: 'load', storeOp: 'store' }] });
+    }
+    bgComp = bg(compPipe, [hdrView, bv[0], linSamp, { buffer: compUBO }]);
+  }
+
+  // --------------------------------------------------------------------------------------
+  // GPU timing
+  // --------------------------------------------------------------------------------------
+  let tsQuery = null, tsResolve = null, tsRead = null, tsPending = false, gpuMs = 0;
+  let firstPassTS = undefined;
+  if (hasTS) {
+    tsQuery = device.createQuerySet({ type: 'timestamp', count: 2 });
+    tsResolve = mkBuf(16, GU.QUERY_RESOLVE | GU.COPY_SRC, 'ts resolve');
+    tsRead = mkBuf(16, GU.MAP_READ | GU.COPY_DST, 'ts read');
+    firstPassTS = { querySet: tsQuery, beginningOfPassWriteIndex: 0 };
+    compPass.timestampWrites = { querySet: tsQuery, endOfPassWriteIndex: 1 };
+  }
+  const computeDesc = { timestampWrites: firstPassTS };
+  const onTsMapped = () => {
+    const t = new BigUint64Array(tsRead.getMappedRange());
+    const ms = Number(t[1] - t[0]) / 1e6;
+    if (ms > 0 && ms < 1000) gpuMs = gpuMs ? gpuMs * 0.8 + ms * 0.2 : ms;
+    tsRead.unmap();
+    tsPending = false;
+  };
+  const onTsFail = () => { tsPending = false; };
+
+  // --------------------------------------------------------------------------------------
+  // Uniform data
+  // --------------------------------------------------------------------------------------
+  const simF = new Float32Array(56);
+  const frameF = new Float32Array(96);
+  const atmoF = new Float32Array(4);
+  const proj = new Float32Array(16), view = new Float32Array(16), viewProj = new Float32Array(16);
+  const LOOP = 600.0;  // s, spectrum time loop (frequencies quantised to it)
+  let needSpectrum = true, needLUT = true, envFull = 2;
+
+  function writeSimStatic() {
+    for (let c = 0; c < C; c++) {
+      const L = CASC_L[c];
+      simF[c] = L;
+      simF[8 + c] = c === 0 ? Math.PI / L : (2 * Math.PI * 6) / L;            // kMin
+      simF[16 + c] = c < C - 1 ? (2 * Math.PI * 6) / CASC_L[c + 1] : (Math.PI * N / L) * 0.98; // kMax
+    }
+    for (let c = 1; c < C; c++) simF[8 + c] = simF[16 + c - 1];
+    simF[40] = P.windHs; simF[41] = P.windDir * D2R; simF[42] = P.windLength; simF[43] = 3.3;
+    // Lake spectrum uses wavelengths directly.
+    simF[44] = P.swellHs; simF[45] = P.swellDir * D2R; simF[46] = P.swellLength; simF[47] = P.swellSpread;
+    simF[48] = P.choppy; simF[49] = 0.0012; simF[50] = LOOP; simF[51] = 1;
+    simF[54] = 2.2; simF[55] = 1.0;
+  }
+
+  // --------------------------------------------------------------------------------------
+  // Camera & input
+  // --------------------------------------------------------------------------------------
+  const cam = { x: 0, y: 1.65, z: 0, yaw: 0, pitch: 8 * D2R, fovY: 58 * D2R, speed: 6 };
+  if (qs.get('cam')) {
+    const v = qs.get('cam').split(',').map(Number);
+    cam.x = v[0]; cam.y = v[1]; cam.z = v[2]; cam.yaw = (v[3] || 0) * D2R; cam.pitch = (v[4] || 0) * D2R;
+  }
+  if (qs.get('fov')) cam.fovY = Number(qs.get('fov')) * D2R;
+  const keys = Object.create(null);
+  addEventListener('keydown', (e) => { keys[e.code] = true; if (e.code === 'KeyH') togglePanel(); });
+  addEventListener('keyup', (e) => { keys[e.code] = false; });
+  addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+  // Fixed observation camera: pointer lock intentionally disabled.
+  let dragging = false;
+  canvas.addEventListener('mousedown', (e) => { if (e.button === 2) dragging = true; });
+  addEventListener('mouseup', () => { dragging = false; });
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  addEventListener('mousemove', (e) => {
+    if (false && (document.pointerLockElement === canvas || dragging)) {
+      cam.yaw += e.movementX * 0.0022;
+      cam.pitch = Math.max(-1.5, Math.min(1.5, cam.pitch - e.movementY * 0.0022));
+    }
+  });
+  addEventListener('wheel', (e) => {
+    cam.speed = Math.max(0.5, Math.min(400, cam.speed * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+  }, { passive: true });
+
+  // Touch drag looks around; two fingers change viewing height.
+  let touchPoint = null;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault(); touchPoint = {x:e.touches[0].clientX, y:e.touches[0].clientY};
+  }, {passive:false});
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); return; if (!touchPoint) return;
+    const t=e.touches[0], dx=t.clientX-touchPoint.x, dy=t.clientY-touchPoint.y;
+    if (e.touches.length > 1) cam.y=Math.max(0.9,Math.min(12,cam.y+dy*0.015));
+    else {cam.yaw-=dx*0.003;cam.pitch=Math.max(-1.2,Math.min(0.8,cam.pitch+dy*0.003));}
+    touchPoint={x:t.clientX,y:t.clientY};
+  }, {passive:false});
+  canvas.addEventListener('touchend', () => {touchPoint=null;});
+  canvas.addEventListener('touchcancel', () => {touchPoint=null;});
+  function updateCamera(dt) {
+    // Fixed beach viewpoint, bounded yaw: no turning inland or flying away.
+    cam.x=0;cam.z=0;cam.y=1.65;cam.yaw=0;cam.pitch=8*D2R;
+    cam.y=Math.max(1.35,Math.min(2.2,cam.y));
+    const horizontalFov=2*Math.atan(Math.tan(cam.fovY/2)*(W/H));
+    const yawLimit=Math.max(0,(150*D2R-horizontalFov)/2);
+    cam.yaw=Math.max(-yawLimit,Math.min(yawLimit,cam.yaw));
+    cam.pitch=Math.max(-10*D2R,Math.min(18*D2R,cam.pitch));
+  }
+
+  // --------------------------------------------------------------------------------------
+  // CDLOD node selection (CPU, allocation free)
+  // --------------------------------------------------------------------------------------
+  const ranges = new Float64Array(LODS);
+  for (let l = 0; l < LODS; l++) ranges[l] = R0 * Math.pow(2, l);
+  const planes = new Float64Array(16);
+  const HB = 4.0;   // vertical bound of displaced surface
+  const XB = 4.0;   // horizontal displacement margin for culling
+  let nodeCount = 0, ccx = 0, ccy = 0, ccz = 0;
+
+  function sphereHit(x0, z0, size, r) {
+    const dx = Math.max(x0 - ccx, 0, ccx - (x0 + size));
+    const dz = Math.max(z0 - ccz, 0, ccz - (z0 + size));
+    const dy = Math.max(-HB - ccy, 0, ccy - HB);
+    return dx * dx + dy * dy + dz * dz <= r * r;
+  }
+  function inFrustum(x0, z0, size) {
+    const minx = x0 - XB - ccx, maxx = x0 + size + XB - ccx;
+    const minz = z0 - XB - ccz, maxz = z0 + size + XB - ccz;
+    const miny = -HB - ccy, maxy = HB - ccy;
+    for (let p = 0; p < 16; p += 4) {
+      const a = planes[p], b = planes[p + 1], c = planes[p + 2], d = planes[p + 3];
+      const px = a > 0 ? maxx : minx, py = b > 0 ? maxy : miny, pz = c > 0 ? maxz : minz;
+      if (a * px + b * py + c * pz + d < 0) return false;
+    }
+    return true;
+  }
+  function addNode(x0, z0, size, lod) {
+    if (nodeCount >= MAX_NODES) return;
+    const o = nodeCount * 4;
+    instData[o] = x0; instData[o + 1] = z0; instData[o + 2] = size; instData[o + 3] = lod;
+    nodeCount++;
+  }
+  function selectNode(x0, z0, size, lod) {
+    if (!sphereHit(x0, z0, size, ranges[lod])) return false;
+    if (!sphereHit(x0, z0, size, MAX_DIST) || !inFrustum(x0, z0, size)) return true;
+    if (lod === 0 || !sphereHit(x0, z0, size, ranges[lod - 1])) { addNode(x0, z0, size, lod); return true; }
+    const h = size * 0.5;
+    for (let i = 0; i < 4; i++) {
+      const nx = x0 + (i & 1) * h, nz = z0 + (i >> 1) * h;
+      if (!selectNode(nx, nz, h, lod - 1)) {
+        if (sphereHit(nx, nz, h, MAX_DIST) && inFrustum(nx, nz, h)) addNode(nx, nz, h, lod - 1);
+      }
+    }
+    return true;
+  }
+  function selectAll() {
+    nodeCount = 0;
+    ccx = cam.x; ccy = cam.y; ccz = cam.z;
+    // side planes from the camera-relative view-projection (rows 3±0, 3±1)
+    const m = viewProj;
+    for (let i = 0; i < 4; i++) {
+      const r = i >> 1, s = (i & 1) ? -1 : 1;
+      planes[i * 4] = m[3] + s * m[r];
+      planes[i * 4 + 1] = m[7] + s * m[4 + r];
+      planes[i * 4 + 2] = m[11] + s * m[8 + r];
+      planes[i * 4 + 3] = m[15] + s * m[12 + r];
+    }
+    const top = LODS - 1;
+    const ts = LEAF * Math.pow(2, top);
+    const x0 = Math.floor((ccx - MAX_DIST) / ts), x1 = Math.floor((ccx + MAX_DIST) / ts);
+    const z0 = Math.floor((ccz - MAX_DIST) / ts), z1 = Math.floor((ccz + MAX_DIST) / ts);
+    for (let zi = z0; zi <= z1; zi++) {
+      for (let xi = x0; xi <= x1; xi++) selectNode(xi * ts, zi * ts, ts, top);
+    }
+  }
+
+  // --------------------------------------------------------------------------------------
+  // Per-frame uniforms
+  // --------------------------------------------------------------------------------------
+  let simTime = Number(qs.get('t')) || 0;
+  let frameIndex = 0;
+
+  function writeFrame(time) {
+    const aspect = W / H;
+    const tanY = Math.tan(cam.fovY * 0.5), tanX = tanY * aspect;
+    const near = 0.05;
+    proj.fill(0);
+    proj[0] = 1 / tanX; proj[5] = 1 / tanY; proj[11] = -1; proj[14] = near;
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const fx = cp * sy, fy = sp, fz = -cp * cy;            // forward
+    const rx = cy, ry = 0, rz = sy;                          // right
+    const ux = ry * fz - rz * fy, uy = rz * fx - rx * fz, uz = rx * fy - ry * fx; // up = right x fwd
+    view.fill(0);
+    view[0] = rx; view[4] = ry; view[8] = rz;
+    view[1] = ux; view[5] = uy; view[9] = uz;
+    view[2] = -fx; view[6] = -fy; view[10] = -fz;
+    view[15] = 1;
+    mat4Mul(viewProj, proj, view);
+    const f = frameF;
+    f.set(viewProj, 0);
+    f[16] = cam.x; f[17] = cam.y; f[18] = cam.z; f[19] = time;
+    f[20] = rx * tanX; f[21] = ry * tanX; f[22] = rz * tanX; f[23] = 0;
+    f[24] = ux * tanY; f[25] = uy * tanY; f[26] = uz * tanY; f[27] = 0;
+    f[28] = fx; f[29] = fy; f[30] = fz; f[31] = 0;
+    const se = P.sunElev * D2R, sa = P.sunAzim * D2R;
+    f[32] = Math.sin(sa) * Math.cos(se); f[33] = Math.sin(se); f[34] = -Math.cos(sa) * Math.cos(se); f[35] = 14.0;
+    f[36] = W; f[37] = H; f[38] = 1 / W; f[39] = 1 / H;
+    for (let c = 0; c < C; c++) { f[40 + c] = CASC_L[c]; f[48 + c] = 1 / CASC_L[c]; }
+    f[56] = Math.cos(P.windDir * D2R); f[57] = Math.sin(P.windDir * D2R); f[58] = P.windSpeed;
+    f[64] = R0; f[65] = GRID; f[66] = FOAM_LEVEL_SIZE[0]; f[67] = FOAM_LEVEL_SIZE[1];
+    f[68] = P.exposure; f[69] = P.bloom; f[70] = frameIndex; f[71] = DBG;
+    f[72] = P.haze; f[73] = Math.max(cam.y, 10) * 0.001; f[74] = P.veil; f[75] = 0.42;
+    // deep water body scatter colour (greenish coastal water), unresolved slope variance
+    f[76] = 0.012 * P.turbidity; f[77] = 0.055 * P.turbidity; f[78] = 0.078 * P.turbidity; f[79] = 0.0024;
+    f[80] = 0.035; f[81] = 0.120; f[82] = 0.085; f[83] = 2.6;
+    f[84] = 0.36 + 0.12 * P.foam; f[85] = 2.5; f[86] = 1.0; f[87] = 1.0;
+    f[88] = (5.802e-3 + 4.40e-3 * P.haze) * 1e-3;
+    f[89] = (13.558e-3 + 4.40e-3 * P.haze) * 1e-3;
+    f[90] = (33.1e-3 + 4.40e-3 * P.haze) * 1e-3;
+    f[91] = 1.1e-4;
+    f[92] = 1.5; f[93] = P.clouds; f[94] = P.cloudOptical; f[95] = time;
+    device.queue.writeBuffer(frameUBO, 0, f);
+  }
+
+  // --------------------------------------------------------------------------------------
+  // UI
+  // --------------------------------------------------------------------------------------
+  const panel = document.getElementById('panel');
+  function togglePanel() { panel.classList.toggle('hidden'); }
+  document.getElementById('settings').addEventListener('click', togglePanel);
+  let paused = false;
+  document.getElementById('pause').addEventListener('click', e => {
+    paused = !paused; e.target.textContent = paused ? 'Resume' : 'Pause';
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    Object.assign(cam,{x:0,y:1.65,z:0,yaw:0,pitch:8*D2R});
+  });
+  document.getElementById('reset-sun').addEventListener('click', () => {
+    SUNSET.elapsed = 0;
+    SUNSET.done = false;
+    SUNSET.active = true;
+    P.sunElev = SUNSET.startElev;
+    syncSliderValue('sunElev', P.sunElev);
+    document.getElementById('sunset-replay').hidden = true;
+    envFull = 2;
+  });
+  document.getElementById('sunset-replay').addEventListener('click', () => {
+    document.getElementById('reset-sun').click();
+  });
+  const SLIDERS = [
+    ['windHs', 'Wind-wave height (m)', 0.01, 0.18, 0.005, 'spec'],
+    ['windLength', 'Wind-wave spacing (m)', 1, 6, 0.1, 'spec'],
+    ['motion', 'Motion speed', 0.4, 1.2, 0.05, ''],
+    ['windDir', 'Wind direction (deg)', 0, 360, 1, 'spec'],
+    ['swellHs', 'Broad-wave height (m)', 0, 0.4, 0.01, 'spec'],
+    ['swellLength', 'Broad-wave spacing (m)', 4, 18, 0.5, 'spec'],
+    ['swellDir', 'Swell direction (deg)', 0, 360, 1, 'spec'],
+    ['choppy', 'Choppiness', 0, 1.6, 0.01, 'spec'],
+    ['turbidity', 'Water turbidity', 0.2, 3, 0.01, ''],
+    ['foam', 'Foam', 0, 3, 0.01, ''],
+    ['sunElev', 'Sun elevation (deg)', -2, 60, 0.1, ''],
+    ['sunAzim', 'Sun azimuth (deg)', -180, 180, 0.5, ''],
+    ['haze', 'Haze', 0.5, 15, 0.1, 'lut'],
+    ['clouds', 'Low clouds', 0, 1, 0.01, ''],
+    ['veil', 'Cloud deck', 0, 1, 0.01, ''],
+    ['exposure', 'Exposure', 0.1, 4, 0.01, ''],
+    ['bloom', 'Bloom', 0, 0.3, 0.001, ''],
+  ];
+  for (const [key, label, min, max, step, kind] of SLIDERS) {
+    const row = document.createElement('label');
+    const name = document.createElement('span'); name.textContent = label;
+    const val = document.createElement('output'); val.textContent = String(P[key]);
+    const inp = document.createElement('input');
+    Object.assign(inp, { type: 'range', min, max, step, value: P[key] });
+    inp.addEventListener('input', () => {
+      P[key] = Number(inp.value); val.textContent = inp.value;
+      if (kind === 'spec') needSpectrum = true;
+      if (kind === 'lut') needLUT = true;
+      envFull = 2;
+    });
+    row.append(name, inp, val);
+    panel.appendChild(row);
+    sliderRefs[key] = { input: inp, output: val, step: Number(step) };
+  }
+  if (qs.get('ui') === '0') { document.getElementById('hud').style.display = 'none'; panel.classList.add('hidden'); }
+  for (const k of Object.keys(P)) if (qs.has(k)) P[k] = Number(qs.get(k));
+
+  const hudFps = document.getElementById('fps');
+
+  // --------------------------------------------------------------------------------------
+  // Frame
+  // --------------------------------------------------------------------------------------
+  const submitList = [null];
+  const shotName = qs.get('shot');
+  const shotFrames = Number(qs.get('frames')) || 240;
+  const shotSeq = Number(qs.get('seq')) || 1;
+  let shotIdx = 0;
+  const fixedDt = shotName ? 1 / 60 : 0;
+  let last = performance.now();
+  let fpsAcc = 0, fpsN = 0, fpsT = 0;
+  let shooting = false;
+
+  function encodeSim(cp) {
+    cp.setPipeline(evolvePipe);
+    cp.setBindGroup(0, bgEvolve);
+    cp.dispatchWorkgroups(N / 16, N / 16, C);
+    cp.setPipeline(rowsPipe);
+    cp.setBindGroup(0, bgRows);
+    cp.dispatchWorkgroups(N, 1, C);
+    cp.setPipeline(colsPipe);
+    cp.setBindGroup(0, bgCols);
+    cp.dispatchWorkgroups(N, 1, C);
+    cp.setPipeline(simMipPipe);
+    for (let m = 1; m < SIM_MIP_COUNT; m++) {
+      const s = N >> m;
+      cp.setBindGroup(0, bgSimMips[m - 1]);
+      cp.dispatchWorkgroups(Math.ceil(s / 8), Math.ceil(s / 8), C);
+    }
+    // foam clipmaps
+    foamCur = 1 - foamCur;
+    cp.setPipeline(foamUpdPipe);
+    cp.setBindGroup(0, bgFoamUpd[foamCur]);
+    cp.dispatchWorkgroups(FOAM_RES / 8, FOAM_RES / 8, 2);
+    cp.setPipeline(arr16MipPipe);
+    const fm = bgFoamMips[foamCur];
+    for (let m = 1; m < FOAMW_MIPS; m++) {
+      const s = Math.max(1, FOAM_RES >> m);
+      cp.setBindGroup(0, fm[m - 1]);
+      cp.dispatchWorkgroups(Math.ceil(s / 8), Math.ceil(s / 8), 2);
+    }
+  }
+
+  function writeFoamUniforms(dt) {
+    for (let l = 0; l < 2; l++) {
+      const ts = FOAM_LEVEL_SIZE[l] / FOAM_RES;
+      const cx = Math.floor(cam.x / ts), cz = Math.floor(cam.z / ts);
+      foamUI[l * 4] = cx; foamUI[l * 4 + 1] = cz;
+      // first frame: pretend the previous window was far away so everything is reset
+      foamUI[l * 4 + 2] = foamFirst ? cx + 100000 : foamSnap[l * 2];
+      foamUI[l * 4 + 3] = foamFirst ? cz + 100000 : foamSnap[l * 2 + 1];
+      foamSnap[l * 2] = cx; foamSnap[l * 2 + 1] = cz;
+      foamUF[8 + l] = ts;
+    }
+    foamFirst = false;
+    foamUF[10] = dt; foamUF[11] = 0.22;          // decay 1/s
+    foamUF[12] = 0.52 + 0.16 * P.foam; foamUF[13] = 2.0; foamUF[14] = 1.0; foamUF[15] = 0;
+    for (let c = 0; c < C; c++) { foamUF[16 + c] = CASC_L[c]; foamUF[24 + c] = 1 / CASC_L[c]; }
+    const drift = 0.03 * P.windSpeed;
+    foamUF[32] = Math.cos(P.windDir * D2R) * drift; foamUF[33] = Math.sin(P.windDir * D2R) * drift;
+    device.queue.writeBuffer(foamUBO, 0, foamUArr);
+  }
+
+  function frame(now) {
+    if (gpuFaulted || shooting) return;  // stop at first validation failure
+    requestAnimationFrame(frame);
+    resize();
+    let dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    fpsAcc += dt; fpsN++; fpsT += dt;
+    if (fpsT > 0.5) {
+      const fps = fpsN / fpsAcc;
+      hudFps.textContent = `${fps.toFixed(0)} fps  ${(1000 / fps).toFixed(2)} ms` +
+        (hasTS ? `  |  GPU ${gpuMs.toFixed(2)} ms` : '') + `  |  ${nodeCount} nodes  ${W}x${H}`;
+      fpsAcc = 0; fpsN = 0; fpsT = 0;
+    }
+    if (fixedDt) dt = fixedDt;
+    if (!paused && SUNSET.active && !SUNSET.done) {
+      SUNSET.elapsed = Math.min(SUNSET.duration, SUNSET.elapsed + dt);
+      const tSun = SUNSET.elapsed / SUNSET.duration;
+      const eased = 0.5 - 0.5 * Math.cos(Math.PI * tSun);
+      P.sunElev = SUNSET.startElev + (SUNSET.endElev - SUNSET.startElev) * eased;
+      syncSliderValue('sunElev', P.sunElev);
+      if (SUNSET.elapsed >= SUNSET.duration) {
+        SUNSET.done = true;
+        document.getElementById('sunset-replay').hidden = false;
+      }
+    }
+    updateCamera(dt);
+    const waveDt = paused ? 0 : dt * P.motion;
+    simTime += waveDt;
+    if (simTime > LOOP) simTime -= LOOP;
+    frameIndex++;
+
+    writeFrame(simTime);
+    writeSimStatic();
+    simF[52] = simTime; simF[53] = waveDt;
+    device.queue.writeBuffer(simUBO, 0, simF);
+    writeFoamUniforms(waveDt);
+    selectAll();
+    if (nodeCount) device.queue.writeBuffer(instBuf, 0, instData, 0, nodeCount * 4);
+
+    if(!paused) cloudClock+=dt*0.009;
+    const cloudNeedsUpdate=frameIndex===1 || frameIndex-lastCloudRefresh>=120;
+    if(cloudNeedsUpdate) {writeCloudParams(cloudClock);lastCloudRefresh=frameIndex;envFull=2;}
+    const traceGPU = frameIndex <= 3;
+    if (traceGPU) device.pushErrorScope('validation');
+    const enc = device.createCommandEncoder({label:'Kite Beach frame '+frameIndex});
+    // Refresh cloud cache before sky / environment passes share its radiance.
+    if(cloudNeedsUpdate){
+      const pc=enc.beginComputePass();
+      pc.setPipeline(cloudPipeline);pc.setBindGroup(0,bgCloud);
+      pc.dispatchWorkgroups(Math.ceil(cloudResolution/4),Math.ceil(cloudResolution/4),Math.ceil(cloudResolution/4));
+      pc.end();
+    }
+    const cp = enc.beginComputePass(computeDesc);
+    if (needSpectrum) {
+      cp.setPipeline(initPipe);
+      cp.setBindGroup(0, bgInit);
+      cp.dispatchWorkgroups(N / 16, N / 16, C);
+      needSpectrum = false;
+    }
+    if (needLUT) {
+      atmoF[0] = P.haze;
+      device.queue.writeBuffer(atmoUBO, 0, atmoF);
+      cp.setPipeline(transPipe);
+      cp.setBindGroup(0, bgTrans);
+      cp.dispatchWorkgroups(256 / 8, 64 / 8);
+      cp.setPipeline(msPipe);
+      cp.setBindGroup(0, bgMS);
+      cp.dispatchWorkgroups(32 / 8, 32 / 8);
+      needLUT = false;
+    }
+    encodeSim(cp);
+    cp.setPipeline(probePipe);
+    cp.setBindGroup(0, bgProbe);
+    cp.dispatchWorkgroups(1);
+    cp.setPipeline(skyViewPipe);
+    cp.setBindGroup(0, bgSkyView);
+    cp.dispatchWorkgroups(Math.ceil(SKY_W / 8), Math.ceil(SKY_H / 8));
+    cp.setPipeline(sunVisPipe);
+    cp.setBindGroup(0, bgSunVis);
+    cp.dispatchWorkgroups(1);
+    cp.setPipeline(envPipe);
+    cp.setBindGroup(0, bgEnv);
+    // one cube face per frame (all six on start-up / after parameter changes)
+    cp.dispatchWorkgroups(ENV_SIZE / 8, ENV_SIZE / 8, envFull > 0 ? 6 : 1);
+    if (envFull > 0) envFull--;
+    cp.setPipeline(cubeMipPipe);
+    for (let m = 1; m < ENV_MIPS; m++) {
+      const s = Math.max(1, ENV_SIZE >> m);
+      cp.setBindGroup(0, bgCubeMips[m - 1]);
+      cp.dispatchWorkgroups(Math.ceil(s / 8), Math.ceil(s / 8), 6);
+    }
+    cp.end();
+
+    const rp = enc.beginRenderPass(mainPass);
+    if (nodeCount) {
+      rp.setPipeline(oceanPipe);
+      rp.setBindGroup(0, bgOcean[foamCur]);
+      rp.setVertexBuffer(0, instBuf);
+      rp.setIndexBuffer(idxBuf, 'uint16');
+      rp.drawIndexed(GRID * GRID * 6, nodeCount);
+    }
+    rp.setPipeline(landPipe);
+    rp.setBindGroup(0,landBG);
+    rp.setVertexBuffer(0,landBuffer);
+    rp.draw(landData.length/7);
+    rp.setPipeline(skyPipe);
+    rp.setBindGroup(0, bgSky);
+    rp.draw(3);
+    rp.end();
+
+    for (let m = 0; m < BLOOM_LEVELS; m++) {
+      const p = enc.beginRenderPass(downPasses[m]);
+      p.setPipeline(downPipe);
+      p.setBindGroup(0, downBGs[m]);
+      p.draw(3);
+      p.end();
+    }
+    for (let i = 0; i < upPasses.length; i++) {
+      const p = enc.beginRenderPass(upPasses[i]);
+      p.setPipeline(upPipe);
+      p.setBindGroup(0, upBGs[i]);
+      p.draw(3);
+      p.end();
+    }
+
+    compData[0] = P.exposure; compData[1] = P.bloom; compData[2] = frameIndex % 64; compData[3] = 0.10;
+    compData[4] = 1.05; compData[5] = 1.06; compData[6] = -0.19; compData[7] = 0;
+    device.queue.writeBuffer(compUBO, 0, compData);
+    const swapTex = ctx.getCurrentTexture();
+    compPass.colorAttachments[0].view = swapTex.createView();
+    const pc = enc.beginRenderPass(compPass);
+    pc.setPipeline(compPipe);
+    pc.setBindGroup(0, bgComp);
+    pc.draw(3);
+    pc.end();
+
+    let doProbe = false;
+    if (!probePending && (frameIndex & 7) === 0) {
+      enc.copyBufferToBuffer(probeOut, 0, probeRead, 0, 16);
+      doProbe = true;
+    }
+    let doTs = false;
+    if (hasTS && !tsPending && (frameIndex & 7) === 0) {
+      enc.resolveQuerySet(tsQuery, 0, 2, tsResolve, 0);
+      enc.copyBufferToBuffer(tsResolve, 0, tsRead, 0, 16);
+      doTs = true;
+    }
+    let readBuf = null;
+    if (shotName && shotIdx < shotSeq && frameIndex >= shotFrames + shotIdx) {
+      shooting = true;
+      const bpr = Math.ceil(W * 4 / 256) * 256;
+      readBuf = device.createBuffer({ size: bpr * H, usage: GU.MAP_READ | GU.COPY_DST });
+      enc.copyTextureToBuffer({ texture: swapTex }, { buffer: readBuf, bytesPerRow: bpr }, [W, H]);
+      saveShot(readBuf, bpr);
+    }
+    submitList[0] = enc.finish();
+    device.queue.submit(submitList);
+    if(traceGPU) {
+      const validatedFrame = frameIndex;
+      device.popErrorScope().then(err=>{
+        if(err) recordGPUError(err.message,'frame '+validatedFrame+' validation scope');
+      }).catch(e=>recordGPUError(e?.message,'error scope'));
+    }
+    if (doProbe) { probePending = true; probeRead.mapAsync(GPUMapMode.READ).then(onProbe, onProbeFail); }
+    if (doTs) { tsPending = true; tsRead.mapAsync(GPUMapMode.READ).then(onTsMapped, onTsFail); }
+    if (readBuf) saveShot(readBuf, Math.ceil(W * 4 / 256) * 256, true);
+  }
+
+  async function saveShot(buf, bpr, go) {
+    if (!go) return;
+    await buf.mapAsync(GPUMapMode.READ);
+    const src = new Uint8Array(buf.getMappedRange());
+    const img = new ImageData(W, H);
+    const bgra = swapFormat === 'bgra8unorm';
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const s = y * bpr + x * 4, d = (y * W + x) * 4;
+        img.data[d] = src[s + (bgra ? 2 : 0)];
+        img.data[d + 1] = src[s + 1];
+        img.data[d + 2] = src[s + (bgra ? 0 : 2)];
+        img.data[d + 3] = 255;
+      }
+    }
+    buf.unmap();
+    const oc = new OffscreenCanvas(W, H);
+    oc.getContext('2d').putImageData(img, 0, 0);
+    const blob = await oc.convertToBlob({ type: 'image/png' });
+    const nm = shotSeq > 1 ? shotName.replace('.png', `_${shotIdx}.png`) : shotName;
+    await fetch('/__shot?name=' + encodeURIComponent(nm), { method: 'POST', body: blob });
+    log('shot saved ' + nm + ' gpu ' + gpuMs.toFixed(2) + 'ms nodes ' + nodeCount);
+    shotIdx++;
+    shooting = false;
+    if (shotIdx < shotSeq) { requestAnimationFrame(frame); return; }
+    if (shotSeq > 1) await fetch('/__shot?name=' + encodeURIComponent(shotName), { method: 'POST', body: blob });
+    document.title = 'SHOT DONE';
+    if (qs.get('keep') === '1') requestAnimationFrame(frame);
+  }
+
+  resize();
+  addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+}
+
+main().catch((e) => { const el=document.getElementById('err'); el.style.display='block'; el.textContent='Unable to start WebGPU. WebGPU scene failed to start (diagnostics below).\n'+(e.message || e); log('init failed: ' + (e && e.stack || e)); });
+
+
+</script>
+
+<div id="scene-controls">
+<details id="audio-controls"><summary>Sound <span style="opacity:.55">◌</span></summary>
+  <div class="meter" id="meter" aria-hidden="true">
+
+</div>
+  <button id="toggle" type="button">▶ Start lake ambience</button>
+  <div id="status" class="audio-status" aria-live="polite">Lake ambience enabled · starts with interaction</div>
+  <div class="audio-grid"><label for="volume">Volume</label><output id="volumeOut">42%</output><input id="volume" type="range" min="0" max="100" value="42"/></div>
+  <div class="audio-grid"><label for="energy">Wave activity</label><output id="energyOut">36%</output><input id="energy" type="range" min="0" max="100" value="36"/></div>
+  <div class="audio-grid"><label for="natural">Texture</label><output id="naturalOut">53%</output><input id="natural" type="range" min="0" max="100" value="53"/></div>
+  <div class="audio-grid"><label for="wind">Wind</label><output id="windOut">8%</output><input id="wind" type="range" min="0" max="100" value="8"/></div>
+
+  <div id="error" role="alert"></div>
+</details>
+<details id="cloud-controls"><summary>Clouds <span style="opacity:.55">☁</span></summary>
+<label>Coverage <input id="c-coverage" type="range" min="0.20" max="0.9" step="0.01" value="0.46"></label>
+<label>Density <input id="c-density" type="range" min="0.2" max="1.4" step="0.02" value="0.52"></label>
+<label>Optical depth <input id="c-optical" type="range" min="0.1" max="2" step="0.02" value="0.64"></label>
+<label><input id="c-enabled" type="checkbox" checked style="width:auto"> Clouds enabled</label>
+<button type="button" id="new-clouds" aria-label="Generate a new random cloud formation">↻ New clouds</button>
+
+</details>
+<details id="quote-controls"><summary>Words <span style="opacity:.55">✧</span></summary>
+  <label for="quote-category">Reflections</label>
+  <select id="quote-category" aria-label="Choose reflection tradition">
+    <option value="off" selected>Off</option>
+    <option value="christian">New Testament · Contemplative</option>
+    <option value="secular">Worldly wisdom</option>
+  </select>
+  <small>Contemplative New Testament and worldly wisdom. Randomized without repeats across reloads where browser storage permits.</small>
+  <div class="sources">Sources for quotations: <a href="https://www.gutenberg.org/ebooks/10900" target="_blank" rel="noopener">KJV</a> · <a href="https://www.gutenberg.org" target="_blank" rel="noopener">public-domain writings</a>.</div>
+</details>
+</div>
+<script>
+// Cloud controls attach to the shared scene state using events.
+for(const [id,key] of [['c-coverage','cloudCoverage'],['c-density','cloudDensity'],['c-optical','cloudOptical']]){
+ document.getElementById(id).addEventListener('input',e=>dispatchEvent(new CustomEvent('cloudParameter',{detail:{key,value:Number(e.target.value)}})));
+}
+document.getElementById('c-enabled').addEventListener('change',e=>dispatchEvent(new CustomEvent('cloudParameter',{detail:{key:'clouds',value:e.target.checked?1:0}})));
+document.getElementById('new-clouds').addEventListener('click',()=>dispatchEvent(new Event('cloudReseed')));
+for (const current of ['audio-controls','cloud-controls','quote-controls']) {
+  document.getElementById(current).addEventListener('toggle',event => {
+    if (!event.currentTarget.open) return;
+    for (const other of ['audio-controls','cloud-controls','quote-controls']) {
+      if (other !== current) document.getElementById(other).open = false;
+    }
+  });
+}
+</script>
+
+<script>
+'use strict';
+const byId = id => document.getElementById(id);
+const controls = {volume:byId('volume'),energy:byId('energy'),natural:byId('natural'),wind:byId('wind')};
+let state = {volume:.42,energy:.36,natural:.53,wind:.08};
+let engine = null;
+const rand = (a,b)=>a+Math.random()*(b-a);
+const clamp = (x,a,b)=>Math.min(b,Math.max(a,x));
+const meter=byId('meter');
+for(let i=0;i<31;i++){const b=document.createElement('i');b.style.height='3px';meter.appendChild(b)}
+function setStatus(s){byId('status').textContent=s}
+function showError(s){const el=byId('error');el.style.display='block';el.textContent=s}
+for(const [key,slider] of Object.entries(controls)){
+  slider.addEventListener('input',()=>{
+    state[key] = Number(slider.value)/100;
+    byId(key+'Out').textContent=slider.value+'%';
+    engine?.update();
+  });
+}
+class LakeEngine {
+  constructor(){
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx) throw Error('This browser does not support Web Audio.');
+    this.ctx=new AudioCtx({latencyHint:'playback'});
+    const c=this.ctx;
+    this.running=false;this.raf=0;this.timer=0;this.sources=new Set();
+    this.master=c.createGain();this.master.gain.value=0;
+    this.limiter=c.createDynamicsCompressor();
+    this.limiter.threshold.value=-15; this.limiter.knee.value=12;
+    this.limiter.ratio.value=2.1;this.limiter.attack.value=.015;this.limiter.release.value=.45;
+    this.analyser=c.createAnalyser();this.analyser.fftSize=256;this.analyser.smoothingTimeConstant=.83;
+    this.master.connect(this.limiter);this.limiter.connect(this.analyser);this.analyser.connect(c.destination);
+    this.bedBus=c.createGain();this.bedBus.connect(this.master);
+    this.waveBus=c.createGain();this.waveBus.connect(this.master);
+    this.fizzBus=c.createGain();this.fizzBus.connect(this.master);
+    this.windBus=c.createGain();this.windBus.connect(this.master);
+    this.nextBed=0;this.nextWave=0;this.nextWind=0;
+    // Three longer, independent synthetic noise fields. No recorded speech, and
+    // no buffer ever loops: offset, speed, grain duration and spacing continually vary.
+    this.pink=this.makeNoise(67,'pink');
+    this.brown=this.makeNoise(79,'brown');
+    this.white=this.makeNoise(61,'white');
+  }
+  makeNoise(seconds,kind){
+    const sr=22050;const n=Math.ceil(seconds*sr);
+    const b=this.ctx.createBuffer(1,n,sr);const samples=b.getChannelData(0);
+    let p0=0,p1=0,p2=0,p3=0,p4=0,p5=0,p6=0;
+    let brown=0;
+    for(let i=0;i<n;i++){
+      const w=Math.random()*2-1;
+      let v;
+      if(kind==='pink'){
+        p0=.99886*p0+w*.0555179;p1=.99332*p1+w*.0750759;
+        p2=.9690*p2+w*.1538520;p3=.8665*p3+w*.3104856;
+        p4=.55*p4+w*.5329522;p5=-.7616*p5-w*.016898;
+        v=(p0+p1+p2+p3+p4+p5+p6+w*.5362)*.096;
+        p6=w*.115926;
+      } else if(kind==='brown') {
+        brown=(brown+w*.028)/1.0008;
+        v=brown*.40;
+      } else v=w*.22;
+      // Avoid abrupt changes at the start/end of a sampled region.
+      samples[i]=clamp(v,-1,1);
+    }
+    return b;
+  }
+  track(s){
+    this.sources.add(s);
+    s.addEventListener('ended',()=>this.sources.delete(s),{once:true});
+  }
+  update(){
+    if(!this.running)return;
+    const t=this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(.58*state.volume,t,.28);
+    this.bedBus.gain.setTargetAtTime(.24+.48*state.natural,t,.5);
+    this.waveBus.gain.setTargetAtTime(.54+.30*state.energy,t,.5);
+    this.fizzBus.gain.setTargetAtTime(.15+.22*state.natural,t,.7);
+    this.windBus.gain.setTargetAtTime(.006+.15*state.wind,t,.7);
+  }
+  makePanner(p){const node=this.ctx.createStereoPanner();node.pan.value=p;return node}
+  grain(buffer,start,duration,range,amp,filter,pan,bus,attack=.36,release=.34){
+    const c=this.ctx;
+    const rate=rand(range[0],range[1]);
+    const available=buffer.duration - duration*rate - .1;
+    if(available<=.01)return;
+    const offset=rand(.05,available);
+    const source=c.createBufferSource();source.buffer=buffer;source.playbackRate.value=rate;
+    const h=c.createBiquadFilter();h.type='highpass';h.frequency.value=filter[0];h.Q.value=.65;
+    const l=c.createBiquadFilter();l.type='lowpass';l.frequency.value=filter[1];l.Q.value=.63;
+    const g=c.createGain();g.gain.value=0;
+    const p=this.makePanner(pan);
+    const peak=start+duration*attack;const fall=start+duration*(1-release);
+    g.gain.setValueAtTime(0,start);
+    g.gain.linearRampToValueAtTime(amp,peak);
+    g.gain.setValueAtTime(amp,Math.max(peak+.01,fall));
+    g.gain.linearRampToValueAtTime(0,start+duration);
+    source.connect(h);h.connect(l);l.connect(g);g.connect(p);p.connect(bus);
+    source.start(start,offset,duration*rate);source.stop(start+duration+.04);this.track(source);
+  }
+  ambient(t){
+    const dur=rand(11,19);
+    this.grain(this.pink,t,dur,[.79,1.15],rand(.18,.27),[85,rand(840,1350)],rand(-.35,.35),this.bedBus,.28,.33);
+    this.nextBed=t+dur*rand(.40,.47);
+  }
+  wave(t){
+    const energy=state.energy;
+    const dur=rand(2.5,5.5)*(1-.12*energy);
+    const amp=(.095+energy*.16)*rand(.62,1.25);
+    this.grain(this.pink,t,dur,[.76,1.18],amp,[rand(160,225),rand(950,1800)],rand(-.38,.38),this.waveBus,.34,.44);
+    if(Math.random()<.70){
+      const rise=rand(.38,.62)*dur;
+      const detailDur=rand(.7,1.7);
+      const t2=t+rise;
+      this.grain(this.white,t2,detailDur,[.90,1.15],amp*rand(.09,.18),[rand(1100,1900),rand(3000,5000)],rand(-.44,.44),this.fizzBus,.15,.65);
+    }
+    // Timing is stochastic; no repeating wash cadence.
+    this.nextWave=t+rand(3.4,8.9)*(1-.30*energy);
+  }
+  wind(t){
+    const dur=rand(13,23);
+    this.grain(this.brown,t,dur,[.82,1.09],rand(.09,.17),[45,rand(330,780)],rand(-.15,.15),this.windBus,.35,.36);
+    this.nextWind=t+dur*rand(.42,.55);
+  }
+  schedule(){
+    if(!this.running)return;
+    const now=this.ctx.currentTime;
+    const lookahead=3.5;
+    // On returning from a suspended background tab, skip old scheduled events.
+    this.nextBed=Math.max(this.nextBed,now-.1);
+    this.nextWave=Math.max(this.nextWave,now-.1);
+    this.nextWind=Math.max(this.nextWind,now-.1);
+    while(this.nextBed<now+lookahead)this.ambient(Math.max(now+.03,this.nextBed));
+    while(this.nextWave<now+lookahead)this.wave(Math.max(now+.03,this.nextWave));
+    while(this.nextWind<now+lookahead)this.wind(Math.max(now+.03,this.nextWind));
+  }
+  async start(){
+    // A resume promise can remain pending indefinitely after Android audio interruption.
+    // Do not leave the UI locked behind it.
+    this.ctx.resume().catch(err=>setStatus('Audio resume failed: '+err.message));
+    await Promise.race([new Promise(resolve=>{if(this.ctx.state==='running')return resolve();const on=()=>{if(this.ctx.state==='running'){this.ctx.removeEventListener('statechange',on);resolve()}};this.ctx.addEventListener('statechange',on);setTimeout(()=>{this.ctx.removeEventListener('statechange',on);resolve()},1800)} )]);
+    if(this.ctx.state!=='running')throw Error('Browser audio engine did not start ('+this.ctx.state+'). Try another tap or reload.');
+    this.running=true;
+    const now=this.ctx.currentTime;
+    this.nextBed=now+.03;this.nextWave=now+.55;this.nextWind=now+.05;
+    this.master.gain.setValueAtTime(0,now);
+    this.master.gain.linearRampToValueAtTime(.58*state.volume,now+2.2);
+    this.update();
+    this.timer=setInterval(()=>this.schedule(),220);
+    this.schedule();this.drawMeter();
+  }
+  drawMeter(){
+    if(!this.running)return;
+    const vals=new Uint8Array(this.analyser.frequencyBinCount);this.analyser.getByteFrequencyData(vals);
+    for(let i=0;i<meter.children.length;i++){
+      const bin=Math.floor(i/30*vals.length*.7);
+      const h=3+Math.pow(vals[bin]/255,1.25)*42;
+      meter.children[i].style.height=h.toFixed(1)+'px';
+    }
+    this.raf=requestAnimationFrame(()=>this.drawMeter());
+  }
+  async stop(){
+    this.running=false;
+    clearInterval(this.timer);cancelAnimationFrame(this.raf);
+    const now=this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setValueAtTime(this.master.gain.value,now);
+    this.master.gain.linearRampToValueAtTime(0,now+1.3);
+    for(const s of this.sources){try{s.stop(now+1.4)}catch(e){}}
+    for(const bar of meter.children)bar.style.height='3px';
+    setTimeout(()=>{this.ctx.close().catch(()=>{})},1600);
+  }
+}
+const play=byId('toggle');let busy=false;
+let recovering=false;
+function audioIsLive(){return !!engine?.running && engine.ctx.state==='running'}
+async function recoverLakeAudio(fromGesture=false){
+  if(!soundWanted || !engine || busy || recovering || !engine.running)return;
+  const current=engine;
+  if(current.ctx.state==='running'){
+    current.schedule();
+    setStatus('Playing · quiet, evolving lake ambience');
+    return;
+  }
+  recovering=true;
+  setStatus('Restoring lake ambience…');
+  try{
+    if(current.ctx.state==='closed')throw Error('Audio context closed');
+    await Promise.race([current.ctx.resume(),new Promise((_,reject)=>setTimeout(()=>reject(Error('Audio resume timed out')),2000))]);
+    if(current.ctx.state!=='running')throw Error('Audio context '+current.ctx.state);
+    current.nextBed=current.ctx.currentTime+.04;
+    current.nextWave=current.ctx.currentTime+.4;
+    current.nextWind=current.ctx.currentTime+.05;
+    current.schedule();
+    setStatus('Playing · quiet, evolving lake ambience');
+  }catch(err){
+    setStatus('Audio paused by browser · tap Sound, then Restore audio');
+    play.textContent='↻ Restore audio';
+    if(fromGesture)showError('Audio recovery: '+(err?.message||String(err)));
+  }finally{recovering=false}
+}
+function monitorAudio(){
+  if(!soundWanted || !engine)return;
+  if(engine.ctx.state!=='running'){
+    setStatus('Audio interrupted · tap Sound, then Restore audio');
+    play.textContent='↻ Restore audio';
+  }else{
+    engine.schedule();
+    if(!busy)play.textContent='Ⅱ Fade out / stop';
+  }
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void recoverLakeAudio()});
+window.addEventListener('pageshow',()=>{void recoverLakeAudio()});
+window.addEventListener('focus',()=>{void recoverLakeAudio()});
+setInterval(monitorAudio,4000);
+
+let soundWanted=true;
+async function startLakeSound(){
+  if(!soundWanted || engine || busy)return;
+  busy=true;play.disabled=true;
+  try{
+    setStatus('Preparing the shoreline…');
+    play.textContent='◌ Starting audio…';
+    // Let the browser paint the button state before allocating noise buffers.
+    await new Promise(resolve=>setTimeout(resolve,0));
+    const next=new LakeEngine();
+    engine=next;
+    next.ctx.addEventListener('statechange',()=>{if(engine===next)monitorAudio()});
+    await next.start();
+    if(!soundWanted){const old=engine;engine=null;await old.stop();return;}
+    play.textContent='Ⅱ Fade out / stop';
+    setStatus('Playing · quiet, evolving lake ambience');
+  }catch(err){
+    showError('Audio could not start: '+(err?.message||String(err)));
+    setStatus('Sound enabled; tap Sound to try again');
+    try{const failed=engine;engine=null;failed?.ctx.close().catch(()=>{})}catch(e){}
+    engine=null;play.textContent='▶ Try again';
+  }finally{busy=false;play.disabled=false}
+}
+play.addEventListener('click',async()=>{
+  if(busy)return;
+  if(engine && !audioIsLive()){
+    if(engine.ctx.state==='closed'){
+      try{await engine.stop()}catch(e){}
+      engine=null; soundWanted=true; await startLakeSound();
+    }else{await recoverLakeAudio(true)}
+  }else if(engine){
+    soundWanted=false;
+    const old=engine;engine=null;busy=true;play.disabled=true;
+    try{await old.stop();play.textContent='▶ Turn sound on';setStatus('Sound off');}
+    finally{busy=false;play.disabled=false;}
+  }else{
+    soundWanted=true;
+    await startLakeSound();
+  }
+});
+function startOnFirstGesture(e){
+  // Clicking the manual sound control already handles its own start/stop.
+  if(e.target?.closest?.('#toggle'))return;
+  if(soundWanted && !engine){
+    detachFirstGesture();
+    void startLakeSound();
+  }else if(soundWanted && engine && !audioIsLive()){
+    void recoverLakeAudio(true);
+  }
+}
+function detachFirstGesture(){
+  document.removeEventListener('pointerdown',startOnFirstGesture,true);
+  document.removeEventListener('keydown',startOnFirstGesture,true);
+  document.removeEventListener('touchstart',startOnFirstGesture,true);
+}
+document.addEventListener('pointerdown',startOnFirstGesture,{capture:true,passive:true});
+document.addEventListener('touchstart',startOnFirstGesture,{capture:true,passive:true});
+document.addEventListener('keydown',startOnFirstGesture,true);
+window.KiteBeachAudio={
+  setWaveEnergy(value){state.energy=clamp(Number(value)||0,0,1);controls.energy.value=Math.round(state.energy*100);byId('energyOut').textContent=controls.energy.value+'%';engine?.update()},
+  getState(){return {...state,playing:audioIsLive(),audioContextState:engine?.ctx.state||'not-started',soundWanted}}
+};
+</script>
+<script>
+
+// In-page reflection player. Quotes are entirely optional; no GPU or audio changes.
+(()=>{
+'use strict';
+const collections={"christian":[{"text":"Blessed are the pure in heart: for they shall see God.","source":"Matthew 5:8 · KJV"},{"text":"For where your treasure is, there will your heart be also.","source":"Matthew 6:21 · KJV"},{"text":"Consider the lilies of the field, how they grow; they toil not, neither do they spin.","source":"Matthew 6:28 · KJV"},{"text":"Take therefore no thought for the morrow.","source":"Matthew 6:34 · KJV"},{"text":"Fear not, little flock; for it is your Father's good pleasure to give you the kingdom.","source":"Luke 12:32 · KJV"},{"text":"The kingdom of God is within you.","source":"Luke 17:21 · KJV"},{"text":"In him was life; and the life was the light of men.","source":"John 1:4 · KJV"},{"text":"And the light shineth in darkness; and the darkness comprehended it not.","source":"John 1:5 · KJV"},{"text":"The wind bloweth where it listeth, and thou hearest the sound thereof.","source":"John 3:8 · KJV"},{"text":"God is a Spirit: and they that worship him must worship him in spirit and in truth.","source":"John 4:24 · KJV"},{"text":"And ye shall know the truth, and the truth shall make you free.","source":"John 8:32 · KJV"},{"text":"I am come that they might have life, and that they might have it more abundantly.","source":"John 10:10 · KJV"},{"text":"In my Father's house are many mansions.","source":"John 14:2 · KJV"},{"text":"Peace I leave with you, my peace I give unto you.","source":"John 14:27 · KJV"},{"text":"Let not your heart be troubled, neither let it be afraid.","source":"John 14:27 · KJV"},{"text":"These things I have spoken unto you, that my joy might remain in you.","source":"John 15:11 · KJV"},{"text":"In the world ye shall have tribulation: but be of good cheer; I have overcome the world.","source":"John 16:33 · KJV"},{"text":"For in him we live, and move, and have our being.","source":"Acts 17:28 · KJV"},{"text":"We walk by faith, not by sight.","source":"2 Corinthians 5:7 · KJV"},{"text":"My grace is sufficient for thee: for my strength is made perfect in weakness.","source":"2 Corinthians 12:9 · KJV"},{"text":"Charity never faileth.","source":"1 Corinthians 13:8 · KJV"},{"text":"And now abideth faith, hope, charity, these three; but the greatest of these is charity.","source":"1 Corinthians 13:13 · KJV"},{"text":"And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus.","source":"Philippians 4:7 · KJV"},{"text":"Let the peace of God rule in your hearts.","source":"Colossians 3:15 · KJV"},{"text":"Pray without ceasing.","source":"1 Thessalonians 5:17 · KJV"},{"text":"For God is love.","source":"1 John 4:8 · KJV"},{"text":"Perfect love casteth out fear.","source":"1 John 4:18 · KJV"},{"text":"In the beginning was the Word, and the Word was with God, and the Word was God.","source":"John 1:1 · KJV"},{"text":"That was the true Light, which lighteth every man that cometh into the world.","source":"John 1:9 · KJV"},{"text":"And the Word was made flesh, and dwelt among us.","source":"John 1:14 · KJV"},{"text":"And of his fulness have all we received, and grace for grace.","source":"John 1:16 · KJV"},{"text":"He must increase, but I must decrease.","source":"John 3:30 · KJV"},{"text":"The water that I shall give him shall be in him a well of water springing up into everlasting life.","source":"John 4:14 · KJV"},{"text":"I am the bread of life: he that cometh to me shall never hunger.","source":"John 6:35 · KJV"},{"text":"Before Abraham was, I am.","source":"John 8:58 · KJV"},{"text":"I am the light of the world: he that followeth me shall not walk in darkness.","source":"John 8:12 · KJV"},{"text":"I and my Father are one.","source":"John 10:30 · KJV"},{"text":"I am the resurrection, and the life.","source":"John 11:25 · KJV"},{"text":"Except a corn of wheat fall into the ground and die, it abideth alone.","source":"John 12:24 · KJV"},{"text":"I am the way, the truth, and the life.","source":"John 14:6 · KJV"},{"text":"I am in my Father, and ye in me, and I in you.","source":"John 14:20 · KJV"},{"text":"Abide in me, and I in you.","source":"John 15:4 · KJV"},{"text":"That they all may be one; as thou, Father, art in me, and I in thee.","source":"John 17:21 · KJV"}],"secular":[{"text":"The universe is transformation: life is opinion.","source":"Marcus Aurelius · Meditations IV.3 · George Long"},{"text":"The best way of avenging thyself is not to become like the wrong doer.","source":"Marcus Aurelius · Meditations VI.6 · George Long"},{"text":"Do not act as if thou wert going to live ten thousand years.","source":"Marcus Aurelius · Meditations IV.17 · George Long"},{"text":"Take away thy opinion, and then there is taken away the complaint.","source":"Marcus Aurelius · Meditations IV.7 · George Long"},{"text":"How much trouble he avoids who does not look to see what his neighbour says or does or thinks.","source":"Marcus Aurelius · Meditations IV.18 · George Long"},{"text":"Men are disturbed not by the things which happen, but by the opinions about the things.","source":"Epictetus · Enchiridion 5 · George Long"},{"text":"Seek not that the things which happen should happen as you wish; but wish the things which happen to be as they are.","source":"Epictetus · Enchiridion 8 · George Long"},{"text":"Everything has two handles, the one by which it may be borne, the other by which it may not.","source":"Epictetus · Enchiridion 43 · George Long"},{"text":"Of things some are in our power, and others are not.","source":"Epictetus · Enchiridion 1 · George Long"},{"text":"The mass of men lead lives of quiet desperation.","source":"Henry David Thoreau · Walden, Economy"},{"text":"Our life is frittered away by detail.","source":"Henry David Thoreau · Walden, Where I Lived"},{"text":"Simplicity, simplicity, simplicity!","source":"Henry David Thoreau · Walden, Where I Lived"},{"text":"A foolish consistency is the hobgoblin of little minds.","source":"Ralph Waldo Emerson · Self-Reliance"},{"text":"To be great is to be misunderstood.","source":"Ralph Waldo Emerson · Self-Reliance"},{"text":"Trust thyself: every heart vibrates to that iron string.","source":"Ralph Waldo Emerson · Self-Reliance"},{"text":"Nothing can bring you peace but yourself.","source":"Ralph Waldo Emerson · Self-Reliance"},{"text":"The only way to have a friend is to be one.","source":"Ralph Waldo Emerson · Friendship"},{"text":"There is nothing either good or bad, but thinking makes it so.","source":"William Shakespeare · Hamlet II.ii"},{"text":"Our doubts are traitors, and make us lose the good we oft might win, by fearing to attempt.","source":"William Shakespeare · Measure for Measure I.iv"},{"text":"Give every man thy ear, but few thy voice.","source":"William Shakespeare · Hamlet I.iii"},{"text":"Love all, trust a few, do wrong to none.","source":"William Shakespeare · All’s Well That Ends Well I.i"},{"text":"Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.","source":"Francis Bacon · Of Studies"},{"text":"Reading maketh a full man; conference a ready man; and writing an exact man.","source":"Francis Bacon · Of Studies"},{"text":"The mind is its own place, and in itself can make a heaven of hell, a hell of heaven.","source":"John Milton · Paradise Lost I"},{"text":"They also serve who only stand and wait.","source":"John Milton · When I Consider How My Light Is Spent"},{"text":"There is no exquisite beauty without some strangeness in the proportion.","source":"Edgar Allan Poe · Ligeia"},{"text":"We are such stuff as dreams are made on; and our little life is rounded with a sleep.","source":"William Shakespeare · The Tempest IV.i"},{"text":"There are more things in heaven and earth, Horatio, than are dreamt of in your philosophy.","source":"William Shakespeare · Hamlet I.v"},{"text":"The fault, dear Brutus, is not in our stars, but in ourselves.","source":"William Shakespeare · Julius Caesar I.ii"},{"text":"There is a tide in the affairs of men, which, taken at the flood, leads on to fortune.","source":"William Shakespeare · Julius Caesar IV.iii"},{"text":"What a piece of work is a man!","source":"William Shakespeare · Hamlet II.ii"},{"text":"The world is too much with us; late and soon, getting and spending, we lay waste our powers.","source":"William Wordsworth · The World Is Too Much with Us"},{"text":"Our birth is but a sleep and a forgetting.","source":"William Wordsworth · Ode: Intimations of Immortality"},{"text":"Beauty is truth, truth beauty.","source":"John Keats · Ode on a Grecian Urn"},{"text":"A thing of beauty is a joy for ever.","source":"John Keats · Endymion I"},{"text":"The child is father of the man.","source":"William Wordsworth · My Heart Leaps Up"},{"text":"I am a part of all that I have met.","source":"Alfred, Lord Tennyson · Ulysses"},{"text":"To strive, to seek, to find, and not to yield.","source":"Alfred, Lord Tennyson · Ulysses"},{"text":"The readiness is all.","source":"William Shakespeare · Hamlet V.ii"},{"text":"Ripeness is all.","source":"William Shakespeare · King Lear V.ii"}]};
+const selector=document.getElementById('quote-category');
+const stage=document.getElementById('quote-stage');
+const line=document.getElementById('quote-text');
+const sourceLine=document.getElementById('quote-source');
+const pools={};
+let generation=0,timeout=0,mode='off';
+const rand=(a,b)=>a+Math.random()*(b-a);
+const randomIndex=n=>{
+ if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1);const bound=4294967296-(4294967296%n);do{crypto.getRandomValues(a)}while(a[0]>=bound);return a[0]%n;}
+ return Math.floor(Math.random()*n);
+};
+const shuffle=items=>{
+ const copy=Array.from({length:items.length},(_,i)=>i);
+ for(let i=copy.length-1;i>0;i--){const j=randomIndex(i+1);[copy[i],copy[j]]=[copy[j],copy[i]];}
+ return copy;
+};
+const storageKey=category=>'kite-beach-deck-v3-'+category;
+function readDeck(category){
+ try{const saved=JSON.parse(localStorage.getItem(storageKey(category)));
+ if(saved?.size===collections[category].length && Array.isArray(saved.remaining) && saved.remaining.every(i=>Number.isInteger(i)&&i>=0&&i<saved.size) && new Set(saved.remaining).size===saved.remaining.length)return saved;
+ }catch(_){} return null;
+}
+function nextQuote(category){
+ let state=pools[category] || readDeck(category);
+ const size=collections[category].length;
+ if(!state)state={size,remaining:shuffle(collections[category]),last:-1};
+ if(!state.remaining.length){
+  state.remaining=shuffle(collections[category]);
+  if(size>1 && state.remaining[state.remaining.length-1]===state.last){
+   const j=randomIndex(size-1);[state.remaining[j],state.remaining[size-1]]=[state.remaining[size-1],state.remaining[j]];
+  }
+ }
+ const index=state.remaining.pop();state.last=index;pools[category]=state;
+ try{localStorage.setItem(storageKey(category),JSON.stringify(state));}catch(_){}
+ return collections[category][index];
+}
+function schedule(fn,delay){clearTimeout(timeout);timeout=setTimeout(fn,delay)}
+function show(token){
+ if(token!==generation || mode==='off')return;
+ const currentQuote=nextQuote(mode);
+ line.textContent=currentQuote.text;
+ sourceLine.textContent=currentQuote.source;
+ // Apply the text before transitioning opacity in the next animation frame.
+ requestAnimationFrame(()=>{
+   if(token!==generation || mode==='off')return;
+   stage.classList.add('visible');
+   schedule(()=>{
+     if(token!==generation)return;
+     stage.classList.remove('visible');
+     schedule(()=>{
+       if(token!==generation)return;
+       line.textContent='';sourceLine.textContent='';
+       schedule(()=>show(token),mode==='buddhist' ? rand(7500,12000) : rand(5000,9200));
+     },4600);
+   },mode==='buddhist' ? rand(28000,39000) : rand(15500,21500));
+ });
+}
+function setMode(next){
+ generation++;clearTimeout(timeout);
+ mode=next;
+ stage.classList.remove('visible');line.textContent='';sourceLine.textContent='';
+ if(!collections[mode])return;
+ // Initial breathing room before the first quotation.
+ schedule(()=>show(generation),3800);
+}
+selector.addEventListener('change',()=>setMode(selector.value));
+window.KiteBeachQuotes={counts:Object.fromEntries(Object.entries(collections).map(([k,v])=>[k,v.length])),getMode:()=>mode};
+})();
+
+</script>
+<!-- Original project licenses: Noniv/web-ocean (MIT), jeantimex/procedural-clouds (MIT). See downloadable source archive for license texts. -->
+<script>
+addEventListener('unhandledrejection', e=>{const p=document.getElementById('gpu-diag');p.style.display='block';p.textContent+='\n\nUnhandled startup error: '+(e.reason?.stack || String(e.reason));});
+</script>
+</body>
+</html>
